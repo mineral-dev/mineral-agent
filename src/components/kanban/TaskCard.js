@@ -157,7 +157,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
         {task.description && (
           <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
         )}
-        {(task.priority === 'high' || task.project || (task.totalWork && ['in_progress','in_review','completed'].includes(task.status))) && (
+        {(task.priority === 'high' || task.project || task.totalWork) && (
           <div className="flex gap-1.5 flex-wrap pt-1">
             {task.priority === 'high' && (
               <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-medium">
@@ -171,7 +171,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
                 {task.project}
               </span>
             )}
-            {task.totalWork && ['in_progress','in_review','completed'].includes(task.status) && (
+            {task.totalWork && (
               <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-medium">
                 <Clock className="w-3 h-3 shrink-0" />
                 {task.totalWork >= 60
