@@ -15,6 +15,7 @@ export async function POST(request) {
     const task = create(body.data || body);
     return NextResponse.json({ data: task }, { status: 201 });
   } catch (err) {
-    return NextResponse.json({ error: err.message }, { status: 500 });
+    console.error('POST /api/tasks error:', err);
+    return NextResponse.json({ error: err.message || 'Failed to create task' }, { status: 500 });
   }
 }

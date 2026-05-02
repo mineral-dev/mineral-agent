@@ -49,7 +49,6 @@ export function create(data) {
 export function update(id, data) {
   const tasks = readTasks();
   const idx = tasks.findIndex(t => t.id === id);
-  console.error('DEBUG update: id=', id, 'type=', typeof id, 'tasks=', JSON.stringify(tasks.map(t=>({id:t.id,type:typeof t.id}))));
   if (idx === -1) throw new Error('Task not found');
   tasks[idx] = { ...tasks[idx], ...data, updatedAt: new Date().toISOString() };
   writeTasks(tasks);

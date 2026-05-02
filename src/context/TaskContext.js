@@ -27,7 +27,7 @@ export function TaskProvider({ children }) {
   }, []);
 
   const addTask = useCallback(async (taskData) => {
-    const result = await api.create({ ...taskData, status: 'not_started', order: 0 });
+    const result = await api.create(taskData);
     setTasks(prev => [result.data, ...prev]);
     return result.data;
   }, []);

@@ -62,10 +62,10 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
           <p className="font-medium text-sm leading-tight line-clamp-1 flex-1">{task.title}</p>
           <DropdownMenu>
             <DropdownMenuTrigger
-              className="w-6 h-6 inline-flex items-center justify-center rounded shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:bg-accent hover:text-accent-foreground"
+              className="h-11 w-11 rounded-xl inline-flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:bg-accent hover:text-accent-foreground"
               onMouseDown={e => e.stopPropagation()}
             >
-              <MoreHorizontal className="w-3.5 h-3.5" />
+              <MoreHorizontal className="w-4 h-4" />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => setEditing(true)}>
