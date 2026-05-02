@@ -4,13 +4,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -21,8 +14,8 @@ import { MoreHorizontal, Pencil, Trash2, X, Check } from 'lucide-react';
 import { useState } from 'react';
 
 const PRIORITIES = [
-  { value: 'normal', label: 'Normal' },
-  { value: 'high', label: 'High' },
+  { value: 'normal', label: 'Normal', dot: 'bg-muted-foreground/50' },
+  { value: 'high', label: 'High', dot: 'bg-red-500' },
 ];
 
 export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
@@ -57,7 +50,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
 
   if (editing) {
     return (
-      <Card className="mb-2 p-3 space-y-3 border-border shadow-sm">
+      <Card className="mb-2 p-3 space-y-3 border-border">
         <Input
           value={form.title}
           onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
@@ -68,27 +61,32 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
         <Textarea
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-          placeholder="Add description..."
+          placeholder="Notes, links, or context..."
           rows={2}
           className="resize-none text-sm"
         />
-        <Select value={form.priority} onValueChange={handlePriorityChange}>
-          <SelectTrigger className="h-9 w-full">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            {PRIORITIES.map((p) => (
-              <SelectItem key={p.value} value={p.value}>
-                <span className="flex items-center gap-2">
-                  {p.value === 'high' && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                  )}
-                  {p.label}
-                </span>
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <div className="flex rounded-lg border border-border overflow-hidden">
+          {PRIORITIES.map((p) => {
+            const active = form.priority === p.value;
+            return (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => handlePriorityChange(p.value)}
+                className={`flex-1 flex items-center justify-center gap-1.5 h-9 text-xs font-medium transition-colors border-r last:border-r-0 border-border
+                  ${active
+                    ? p.value === 'high'
+                      ? 'bg-red-500 text-white border-red-500'
+                      : 'bg-foreground text-background'
+                    : 'bg-background text-muted-foreground hover:bg-muted/40'
+                  }`}
+              >
+                <span className={`w-1.5 h-1.5 rounded-full ${active && p.value === 'normal' ? 'bg-background/60' : p.dot}`} />
+                {p.label}
+              </button>
+            );
+          })}
+        </div>
         <div className="flex gap-2 pt-1">
           <Button size="sm" onClick={save} disabled={!form.title.trim()} className="gap-1.5">
             <Check className="w-3.5 h-3.5" />
@@ -107,8 +105,8 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
     <Card
       className={`mb-2 group cursor-grab active:cursor-grabbing transition-all border-border
         ${isDragging
-          ? 'shadow-xl rotate-1 opacity-90'
-          : 'shadow-sm hover:shadow-md hover:border-primary/30'
+          ? 'rotate-1 opacity-90 border-primary/40'
+          : 'hover:border-primary/30'
         }`}
     >
       <div className="p-3 space-y-2">
