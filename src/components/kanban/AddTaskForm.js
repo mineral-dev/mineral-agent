@@ -116,7 +116,7 @@ function TaskFormInner({ form, setForm, onSubmit, error }) {
           Project
         </label>
         <Input
-          placeholder="Leave empty = new project (from title)"
+          placeholder="mineral-dev/repo-name (optional)"
           value={form.project}
           onChange={(e) => setForm((f) => ({ ...f, project: e.target.value }))}
           className="h-11"
