@@ -8,11 +8,6 @@ export function TaskProvider({ children }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
 
-  // Load tasks on mount
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
   const COLUMNS = [
     { id: 'not_started',    label: 'Not Started',    dotColor: 'bg-neutral-400', borderColor: 'border-l-neutral-400' },
     { id: 'ready_to_start', label: 'Ready to Start', dotColor: 'bg-blue-500',    borderColor: 'border-l-blue-500'    },
@@ -30,6 +25,11 @@ export function TaskProvider({ children }) {
       setLoading(false);
     }
   }, []);
+
+  // Load tasks on mount
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const addTask = useCallback(async (taskData) => {
     const result = await api.create(taskData);
