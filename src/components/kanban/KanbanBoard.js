@@ -8,7 +8,7 @@ export function KanbanBoard() {
 
   const byColumn = (colId) =>
     tasks
-      .filter(t => t.status === colId)
+      .filter((t) => t.status === colId)
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
   const onDragEnd = async (result) => {
@@ -20,8 +20,8 @@ export function KanbanBoard() {
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
-      <div className="flex gap-4 overflow-x-auto pb-4 px-1">
-        {COLUMNS.map(col => (
+      <div className="flex gap-3 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
+        {COLUMNS.map((col) => (
           <TaskColumn
             key={col.id}
             column={col}

@@ -5,7 +5,14 @@ async function fetcher(url, options = {}) {
     headers: { 'Content-Type': 'application/json' },
     ...options,
   });
-  if (!res.ok) throw new Error(`API error ${res.status}`);
+  if (!res.ok) {
+    let errMsg = `API error ${res.status}`;
+    try {
+      const errData = await res.json();
+      if (errData?.error) errMsg = errData.error;
+    } catch {}
+    throw new Error(errMsg);
+  }
   return res.json();
 }
 
