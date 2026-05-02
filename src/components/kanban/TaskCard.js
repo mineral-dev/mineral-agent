@@ -14,10 +14,30 @@ import {
   Folder,
   MoreHorizontal,
   Pencil,
+  Timer,
   Trash2,
   Zap,
 } from 'lucide-react';
 import { useState } from 'react';
+
+function formatEta(startedAt, totalWork) {
+  const eta = new Date(startedAt).getTime() + totalWork * 60 * 1000;
+  const now = Date.now();
+  const diffMs = eta - now;
+  const diffMin = Math.round(diffMs / 60000);
+
+  if (diffMin > 0) {
+    if (diffMin < 60) return { label: `in ${diffMin}m`, overdue: false };
+    const h = Math.floor(diffMin / 60);
+    const m = diffMin % 60;
+    return { label: `in ${h}h${m > 0 ? ` ${m}m` : ''}`, overdue: false };
+  }
+  const over = Math.abs(diffMin);
+  if (over < 60) return { label: `${over}m overdue`, overdue: true };
+  const h = Math.floor(over / 60);
+  const m = over % 60;
+  return { label: `${h}h${m > 0 ? ` ${m}m` : ''} overdue`, overdue: true };
+}
 
 const PRIORITIES = [
   { value: 'normal', label: 'Normal', dot: 'bg-muted-foreground/50' },
@@ -179,6 +199,19 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
                   : `${task.totalWork}m`}
               </span>
             )}
+            {task.startedAt && task.totalWork && task.status === 'in_progress' && (() => {
+              const eta = formatEta(task.startedAt, task.totalWork);
+              return (
+                <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium border ${
+                  eta.overdue
+                    ? 'bg-orange-50 text-orange-700 border-orange-200'
+                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                }`}>
+                  <Timer className="w-3 h-3 shrink-0" />
+                  {eta.label}
+                </span>
+              );
+            })()}
           </div>
         )}
       </div>
