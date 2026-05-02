@@ -3,6 +3,7 @@
  * pickup_task.mjs
  * Mineral Agent — find one "ready_to_start" task, estimate work time,
  * write total_work (minutes), move to "in_progress", log result.
+ * Branch naming convention for coding agents: hermes/coder-work-{2-word-slug-from-title}.
  *
  * Usage: node pickup_task.mjs
  * Requires: DATABASE_URL env var (Neon PostgreSQL connection string)
@@ -67,6 +68,52 @@ function estimateWorkMinutes(title = '', description = '') {
 }
 
 // ─── Format ───────────────────────────────────────────────────────────────────
+
+function formatBranchName(title = '') {
+  const stopwords = new Set([
+    'a',
+    'the',
+    'to',
+    'of',
+    'for',
+    'in',
+    'on',
+    'and',
+    'or',
+    'is',
+    'are',
+    'be',
+    'add',
+    'new',
+    'create',
+    'change',
+    'show',
+    'update',
+    'name',
+    'creation',
+  ]);
+  const preferredTerms = new Set(['branch']);
+  const words = title
+    .toLowerCase()
+    .match(/[a-z0-9]+/g) ?? [];
+
+  const meaningfulWords = [];
+  const seen = new Set();
+  for (const word of words) {
+    if (stopwords.has(word) || seen.has(word)) continue;
+    seen.add(word);
+    meaningfulWords.push(word);
+  }
+
+  const slug = meaningfulWords
+    .map((word, index) => ({ word, index, score: preferredTerms.has(word) ? 1 : 0 }))
+    .sort((a, b) => b.score - a.score || a.index - b.index)
+    .slice(0, 2)
+    .map(({ word }) => word)
+    .join('-');
+
+  return `hermes/coder-work-${slug}`;
+}
 
 function formatDuration(minutes) {
   const h = Math.floor(minutes / 60);
