@@ -1,36 +1,81 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
+# Mineral Agent — Kanban Task Dashboard
+
+A web-based Kanban board for personal task management, built with Next.js and styled with Tailwind CSS + shadcn/ui.
+
+## Workflow Columns
+
+Tasks flow through 5 status columns:
+
+```
+Not Started → Ready to Start → In Progress → In Review → Completed
+```
+
+- **Not Started** — Tasks added to the board start here
+- **Ready to Start** — Tasks queued for Hermes Agent to pick up
+- **In Progress** — Agent is actively working on the task
+- **In Review** — Task done, awaiting your verification
+- **Completed** — Tested and verified
+
+## Features
+
+- **Drag & drop** — Move tasks between columns with `@hello-pangea/dnd`
+- **Task fields** — Title, description, priority (Normal/High), project tag
+- **Persistent storage** — JSON file storage (no database setup needed)
+- **Hermes integration** — Agent polls `ready_to_start` tasks and moves them to `in_progress` automatically
+- **SWR** — Real-time data fetching with stale-while-revalidate
+
+## Tech Stack
+
+- **Frontend** — Next.js 16 (App Router), React 19, Tailwind CSS v4
+- **UI Components** — shadcn/ui (Radix-based)
+- **Drag & Drop** — `@hello-pangea/dnd`
+- **Data Fetching** — SWR
+- **Storage** — JSON file (`data/tasks.json`)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
-npm run dev
-# or
-yarn dev
-# or
+# Install dependencies
+pnpm install
+
+# Start development server
 pnpm dev
-# or
-bun dev
+
+# Build for production
+pnpm build
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) to use the board.
 
-You can start editing the page by modifying `app/page.js`. The page auto-updates as you edit the file.
+## Task API
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+All API calls are same-origin (no CORS issues):
 
-## Learn More
+```
+GET    /api/tasks       — List all tasks
+POST   /api/tasks       — Create task
+PUT    /api/tasks/[id]  — Update task
+DELETE /api/tasks/[id]  — Delete task
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Project Structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+```
+├── src/
+│   ├── app/                  # Next.js App Router pages
+│   │   ├── api/tasks/        # API routes (CRUD)
+│   │   ├── page.js           # Kanban board page
+│   │   └── layout.js         # Root layout
+│   ├── components/
+│   │   ├── kanban/           # KanbanBoard, TaskColumn, TaskCard, AddTaskForm
+│   │   └── ui/               # shadcn/ui components
+│   ├── context/              # TaskContext (global state)
+│   └── lib/                  # api.js, db.js, utils.js
+├── data/
+│   └── tasks.json            # Task storage
+└── public/                  # Static assets
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deploy
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Deployed on Vercel — connects to GitHub for automatic CI/CD on push to `main`.

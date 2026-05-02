@@ -3,7 +3,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __filename = fileURLToPath(import.meta.url);
-const DATA_FILE = '/Users/andy/Project/mineral-agent/frontend/data/tasks.json';
+const DATA_FILE = '/Users/andy/Project/mineral-agent/data/tasks.json';
 
 // Ensure data dir exists
 const DATA_DIR = path.dirname(DATA_FILE);

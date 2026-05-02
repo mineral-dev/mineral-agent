@@ -1,7 +1,8 @@
 {
-  "name": "frontend",
+  "name": "mineral-agent",
   "version": "0.1.0",
   "private": true,
+  "description": "Kanban task management dashboard with 5-column workflow (Not Started → Ready to Start → In Progress → In Review → Completed). Integrated with Hermes Agent for automated task pickup and status transitions.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -11,13 +12,10 @@
   "dependencies": {
     "@base-ui/react": "^1.4.1",
     "@hello-pangea/dnd": "^18.0.1",
-    "@prisma/client": "^5.22.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
-    "dotenv": "^17.4.2",
     "lucide-react": "^1.14.0",
     "next": "16.2.4",
-    "prisma": "^5.22.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "shadcn": "^4.6.0",
