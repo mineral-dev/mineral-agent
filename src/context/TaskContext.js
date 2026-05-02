@@ -28,8 +28,17 @@ export function TaskProvider({ children }) {
 
   // Load tasks on mount
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    const load = async () => {
+      setLoading(true);
+      try {
+        const data = await api.list();
+        setTasks(data.data || []);
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, []);
 
   const addTask = useCallback(async (taskData) => {
     const result = await api.create(taskData);

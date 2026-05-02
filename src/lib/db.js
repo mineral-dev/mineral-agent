@@ -1,76 +1,191 @@
-import fs from 'fs';
-import path from 'path';
+import pg from 'pg';
+const { Pool } = pg;
 
-const DATA_FILE = path.join(process.cwd(), 'data', 'tasks.json');
+let pool;
 
-// Ensure data dir exists
-const DATA_DIR = path.dirname(DATA_FILE);
-if (!fs.existsSync(DATA_DIR)) {
-  fs.mkdirSync(DATA_DIR, { recursive: true });
+function getPool() {
+  if (!pool) {
+    const connectionString = process.env.DATABASE_URL;
+    if (!connectionString) {
+      throw new Error('DATABASE_URL environment variable is not set');
+    }
+    pool = new Pool({ connectionString, max: 1 });
+  }
+  return pool;
 }
 
-function readTasks() {
-  if (!fs.existsSync(DATA_FILE)) {
-    return [];
+async function query(sql, params) {
+  const client = await getPool().connect();
+  try {
+    const result = await client.query(sql, params);
+    return result;
+  } finally {
+    client.release();
   }
-  const raw = fs.readFileSync(DATA_FILE, 'utf-8');
-  if (!raw.trim()) {
-    return [];
-  }
-  return JSON.parse(raw);
 }
 
-function writeTasks(tasks) {
-  fs.writeFileSync(DATA_FILE, JSON.stringify(tasks, null, 2));
+// Initialize schema (called once on first request)
+async function initSchema() {
+  await query(`
+    CREATE TABLE IF NOT EXISTS tasks (
+      id          SERIAL PRIMARY KEY,
+      title       TEXT    NOT NULL,
+      description TEXT,
+      priority    TEXT    NOT NULL DEFAULT 'normal',
+      project     TEXT,
+      status      TEXT    NOT NULL DEFAULT 'not_started',
+      task_order  INTEGER NOT NULL DEFAULT 0,
+      total_work  INTEGER,
+      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
 }
 
-export function getAll() {
-  return readTasks().sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+// Ensure schema exists
+let schemaInitialized = false;
+async function ensureSchema() {
+  if (!schemaInitialized) {
+    await initSchema();
+    schemaInitialized = true;
+  }
 }
 
-export function create(data) {
-  if (!data || typeof data !== 'object') {
-    throw new Error('Task data is required');
-  }
+export async function getAll() {
+  await ensureSchema();
+  const result = await query(
+    'SELECT id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text FROM tasks ORDER BY task_order ASC'
+  );
+  return result.rows.map(row => ({
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    priority: row.priority,
+    project: row.project,
+    status: row.status,
+    order: row.task_order,
+    totalWork: row.total_work,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
+}
 
-  const title = typeof data.title === 'string' ? data.title.trim() : '';
-  if (!title) {
-    throw new Error('Task title is required');
-  }
-
-  const tasks = readTasks();
-  const maxId = tasks.reduce((max, t) => Math.max(max, t.id || 0), 0);
-  const task = {
-    id: maxId + 1,
-    title,
-    description: typeof data.description === 'string' && data.description.trim()
-      ? data.description.trim()
-      : null,
-    priority: data.priority || 'normal',
-    project: typeof data.project === 'string' && data.project.trim()
-      ? data.project.trim()
-      : null,
-    status: data.status || 'not_started',
-    order: typeof data.order === 'number' ? data.order : 0,
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
+export async function getById(id) {
+  await ensureSchema();
+  const result = await query(
+    'SELECT id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text FROM tasks WHERE id = $1',
+    [Number(id)]
+  );
+  if (result.rows.length === 0) return null;
+  const row = result.rows[0];
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    priority: row.priority,
+    project: row.project,
+    status: row.status,
+    order: row.task_order,
+    totalWork: row.total_work,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
   };
-  tasks.push(task);
-  writeTasks(tasks);
-  return task;
 }
 
-export function update(id, data) {
-  const tasks = readTasks();
-  const idx = tasks.findIndex(t => t.id === id);
-  if (idx === -1) throw new Error('Task not found');
-  tasks[idx] = { ...tasks[idx], ...data, updatedAt: new Date().toISOString() };
-  writeTasks(tasks);
-  return tasks[idx];
+export async function create(data) {
+  await ensureSchema();
+  const title = typeof data.title === 'string' ? data.title.trim() : '';
+  if (!title) throw new Error('Task title is required');
+
+  const description = typeof data.description === 'string' && data.description.trim()
+    ? data.description.trim() : null;
+  const priority = data.priority || 'normal';
+  const project = typeof data.project === 'string' && data.project.trim()
+    ? data.project.trim() : null;
+  const status = data.status || 'not_started';
+  const order = typeof data.order === 'number' ? data.order : 0;
+  const totalWork = typeof data.totalWork === 'number' ? data.totalWork : null;
+
+  const result = await query(
+    `INSERT INTO tasks (title, description, priority, project, status, task_order, total_work)
+     VALUES ($1, $2, $3, $4, $5, $6, $7)
+     RETURNING id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text`,
+    [title, description, priority, project, status, order, totalWork]
+  );
+  const row = result.rows[0];
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    priority: row.priority,
+    project: row.project,
+    status: row.status,
+    order: row.task_order,
+    totalWork: row.total_work,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
-export function remove(id) {
-  const tasks = readTasks();
-  const filtered = tasks.filter(t => t.id !== id);
-  writeTasks(filtered);
+export async function update(id, data) {
+  await ensureSchema();
+  const existing = await getById(id);
+  if (!existing) throw new Error('Task not found');
+
+  const title = typeof data.title === 'string' ? data.title.trim() : existing.title;
+  const description = data.description !== undefined
+    ? (typeof data.description === 'string' && data.description.trim() ? data.description.trim() : null)
+    : existing.description;
+  const priority = data.priority || existing.priority;
+  const project = data.project !== undefined
+    ? (typeof data.project === 'string' && data.project.trim() ? data.project.trim() : null)
+    : existing.project;
+  const status = data.status || existing.status;
+  const order = data.order !== undefined ? data.order : existing.order;
+  const totalWork = data.totalWork !== undefined ? data.totalWork : existing.totalWork;
+
+  const result = await query(
+    `UPDATE tasks SET title=$1, description=$2, priority=$3, project=$4, status=$5, task_order=$6, total_work=$7, updated_at=NOW()
+     WHERE id=$8
+     RETURNING id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text`,
+    [title, description, priority, project, status, order, totalWork, Number(id)]
+  );
+  const row = result.rows[0];
+  return {
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    priority: row.priority,
+    project: row.project,
+    status: row.status,
+    order: row.task_order,
+    totalWork: row.total_work,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function remove(id) {
+  await ensureSchema();
+  await query('DELETE FROM tasks WHERE id = $1', [Number(id)]);
+}
+
+export async function getByStatus(status) {
+  await ensureSchema();
+  const result = await query(
+    'SELECT id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text FROM tasks WHERE status = $1 ORDER BY task_order ASC',
+    [status]
+  );
+  return result.rows.map(row => ({
+    id: row.id,
+    title: row.title,
+    description: row.description,
+    priority: row.priority,
+    project: row.project,
+    status: row.status,
+    order: row.task_order,
+    totalWork: row.total_work,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  }));
 }

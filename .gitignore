@@ -14,10 +14,6 @@ out/
 .env.*.local
 
 # Logs
-*.log
-npm-debug.log*
-pnpm-debug.log*
-
 # System
 .DS_Store
 
