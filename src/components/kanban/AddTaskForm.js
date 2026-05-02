@@ -26,7 +26,7 @@ const defaultForm = {
   title: "",
   description: "",
   priority: "normal",
-  project: "mineral-agent",
+  project: "",
 };
 
 const PRIORITIES = [
@@ -116,7 +116,7 @@ function TaskFormInner({ form, setForm, onSubmit, error }) {
           Project
         </label>
         <Input
-          placeholder="mineral-agent (default)"
+          placeholder="Leave empty = new project (from title)"
           value={form.project}
           onChange={(e) => setForm((f) => ({ ...f, project: e.target.value }))}
           className="h-11"
