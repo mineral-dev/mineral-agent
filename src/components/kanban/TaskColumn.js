@@ -2,36 +2,24 @@
 import { Droppable, Draggable } from '@hello-pangea/dnd';
 import { TaskCard } from './TaskCard';
 
-const colColors = {
-  not_started:    { header: 'bg-neutral-100 border-neutral-200', dot: 'bg-neutral-400' },
-  ready_to_start: { header: 'bg-blue-100 border-blue-200',      dot: 'bg-blue-500'    },
-  in_progress:    { header: 'bg-yellow-100 border-yellow-200',   dot: 'bg-yellow-500'  },
-  in_review:      { header: 'bg-purple-100 border-purple-200',   dot: 'bg-purple-500'  },
-  completed:      { header: 'bg-green-100 border-green-200',    dot: 'bg-green-500'   },
-};
-
-export function TaskColumn({ column, tasks, onUpdate, onDelete, onDrop }) {
-  const colors = colColors[column.id] || colColors.not_started;
-
+export function TaskColumn({ column, tasks, onUpdate, onDelete }) {
   return (
-    <div className="flex flex-col w-72 shrink-0">
-      {/* Column header */}
-      <div className={`flex items-center justify-between px-3 py-2 rounded-t-lg border ${colors.header} ${colors.dot.replace('bg-', 'text-')}`}>
+    <div className="w-72 shrink-0 flex flex-col">
+      <div className={`flex items-center justify-between px-3 py-2.5 rounded-t-lg border border-l-4 ${column.borderColor}`}>
         <div className="flex items-center gap-2">
-          <span className={`w-2 h-2 rounded-full ${colors.dot}`} />
+          <span className={`w-2 h-2 rounded-full shrink-0 ${column.dotColor}`} />
           <span className="font-semibold text-sm">{column.label}</span>
         </div>
-        <span className="text-xs font-medium bg-white/70 px-1.5 py-0.5 rounded-full">{tasks.length}</span>
+        <span className="text-xs font-medium bg-muted/50 px-1.5 py-0.5 rounded-full">{tasks.length}</span>
       </div>
 
-      {/* Droppable area */}
       <Droppable droppableId={column.id}>
         {(provided, snapshot) => (
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
             className={`flex-1 min-h-32 p-2 rounded-b-lg border-x border-b transition-colors ${
-              snapshot.isDraggingOver ? 'bg-primary/5 border-primary/30' : 'bg-muted/20 border-muted'
+              snapshot.isDraggingOver ? 'bg-primary/5' : 'bg-muted/10'
             }`}
           >
             {tasks.map((task, index) => (

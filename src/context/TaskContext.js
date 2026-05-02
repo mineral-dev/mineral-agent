@@ -9,11 +9,11 @@ export function TaskProvider({ children }) {
   const [loading, setLoading] = useState(false);
 
   const COLUMNS = [
-    { id: 'not_started',    label: 'Not Started',    color: 'bg-neutral-100' },
-    { id: 'ready_to_start', label: 'Ready to Start', color: 'bg-blue-50'    },
-    { id: 'in_progress',    label: 'In Progress',    color: 'bg-yellow-50'  },
-    { id: 'in_review',      label: 'In Review',      color: 'bg-purple-50'  },
-    { id: 'completed',      label: 'Completed',      color: 'bg-green-50'   },
+    { id: 'not_started',    label: 'Not Started',    dotColor: 'bg-neutral-400', borderColor: 'border-l-neutral-400' },
+    { id: 'ready_to_start', label: 'Ready to Start', dotColor: 'bg-blue-500',    borderColor: 'border-l-blue-500'    },
+    { id: 'in_progress',    label: 'In Progress',    dotColor: 'bg-amber-500',   borderColor: 'border-l-amber-500'   },
+    { id: 'in_review',      label: 'In Review',      dotColor: 'bg-purple-500',  borderColor: 'border-l-purple-500'  },
+    { id: 'completed',      label: 'Completed',      dotColor: 'bg-green-500',   borderColor: 'border-l-green-500'   },
   ];
 
   const refresh = useCallback(async () => {
