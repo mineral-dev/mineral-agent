@@ -1,7 +1,6 @@
 'use client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import {
   DropdownMenu,
@@ -56,20 +55,26 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
 
   if (editing) {
     return (
-      <Card className="mb-2 p-2.5 space-y-2 border-primary/40 ring-1 ring-primary/10">
-        <Input
+      <Card className="mb-2 p-3 space-y-1.5 border-primary/40 ring-1 ring-primary/10">
+        <Textarea
           value={form.title}
           onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-          className="h-8 text-sm font-medium"
+          onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
+          className="resize-none overflow-hidden min-h-0 text-sm font-medium border-none shadow-none bg-transparent focus-visible:ring-0 px-0 py-0 leading-snug"
+          rows={1}
           autoFocus
-          onKeyDown={(e) => e.key === 'Enter' && form.title.trim() && save()}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') { e.preventDefault(); form.title.trim() && save(); }
+            if (e.key === 'Escape') cancel();
+          }}
         />
         <Textarea
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+          onKeyDown={(e) => e.key === 'Escape' && cancel()}
           placeholder="Notes..."
-          rows={2}
-          className="resize-none text-xs"
+          rows={1}
+          className="resize-none min-h-0 text-xs text-muted-foreground border-none shadow-none bg-transparent focus-visible:ring-0 px-0 py-0 leading-snug"
         />
         {task.project && (
           <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border w-fit">
@@ -117,39 +122,37 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
 
   return (
     <Card
-      className={`mb-2 group cursor-grab active:cursor-grabbing transition-all border-border
+      className={`mb-2 group relative cursor-grab active:cursor-grabbing border-border
         ${isDragging
           ? 'rotate-1 opacity-90 border-primary/40'
           : 'hover:border-primary/30'
         }`}
     >
+      <DropdownMenu>
+        <DropdownMenuTrigger
+          className="absolute top-2 right-2 h-11 w-11 rounded-xl inline-flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-accent-foreground z-10 focus-visible:ring-2 focus-visible:ring-primary"
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <MoreHorizontal className="w-4 h-4" />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-40">
+          <DropdownMenuItem onClick={() => setEditing(true)} className="gap-2">
+            <Pencil className="w-3.5 h-3.5" />
+            Edit
+          </DropdownMenuItem>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem
+            variant="destructive"
+            onClick={() => onDelete(task.id)}
+            className="gap-2"
+          >
+            <Trash2 className="w-3.5 h-3.5" />
+            Delete
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
       <div className="p-3 space-y-2">
-        <div className="flex items-start justify-between gap-2">
-          <p className="font-medium text-sm leading-tight line-clamp-2 flex-1">{task.title}</p>
-          <DropdownMenu>
-            <DropdownMenuTrigger
-              className="h-8 w-8 rounded-lg inline-flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:bg-accent hover:text-accent-foreground"
-              onMouseDown={(e) => e.stopPropagation()}
-            >
-              <MoreHorizontal className="w-4 h-4" />
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-40">
-              <DropdownMenuItem onClick={() => setEditing(true)} className="gap-2">
-                <Pencil className="w-3.5 h-3.5" />
-                Edit
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                variant="destructive"
-                onClick={() => onDelete(task.id)}
-                className="gap-2"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                Delete
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
+        <p className="font-medium text-sm leading-tight line-clamp-2 pr-6">{task.title}</p>
         {task.description && (
           <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
         )}
@@ -162,7 +165,8 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
               </span>
             )}
             {task.project && (
-              <span className="inline-flex items-center text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
+              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
+                <Folder className="w-3 h-3 shrink-0" />
                 {task.project}
               </span>
             )}
