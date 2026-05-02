@@ -40,6 +40,7 @@ async function initSchema() {
       updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
+  await query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS started_at TIMESTAMPTZ`);
 }
 
 // Ensure schema exists
@@ -54,7 +55,7 @@ async function ensureSchema() {
 export async function getAll() {
   await ensureSchema();
   const result = await query(
-    'SELECT id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text FROM tasks ORDER BY task_order ASC'
+    'SELECT id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text, started_at::text FROM tasks ORDER BY task_order ASC'
   );
   return result.rows.map(row => ({
     id: row.id,
@@ -67,13 +68,14 @@ export async function getAll() {
     totalWork: row.total_work,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    startedAt: row.started_at,
   }));
 }
 
 export async function getById(id) {
   await ensureSchema();
   const result = await query(
-    'SELECT id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text FROM tasks WHERE id = $1',
+    'SELECT id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text, started_at::text FROM tasks WHERE id = $1',
     [Number(id)]
   );
   if (result.rows.length === 0) return null;
@@ -89,6 +91,7 @@ export async function getById(id) {
     totalWork: row.total_work,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    startedAt: row.started_at,
   };
 }
 
@@ -107,10 +110,10 @@ export async function create(data) {
   const totalWork = typeof data.totalWork === 'number' ? data.totalWork : null;
 
   const result = await query(
-    `INSERT INTO tasks (title, description, priority, project, status, task_order, total_work)
-     VALUES ($1, $2, $3, $4, $5, $6, $7)
-     RETURNING id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text`,
-    [title, description, priority, project, status, order, totalWork]
+    `INSERT INTO tasks (title, description, priority, project, status, task_order, total_work, started_at)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+     RETURNING id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text, started_at::text`,
+    [title, description, priority, project, status, order, totalWork, status === 'in_progress' ? new Date() : null]
   );
   const row = result.rows[0];
   return {
@@ -124,6 +127,7 @@ export async function create(data) {
     totalWork: row.total_work,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    startedAt: row.started_at,
   };
 }
 
@@ -145,9 +149,11 @@ export async function update(id, data) {
   const totalWork = data.totalWork !== undefined ? data.totalWork : existing.totalWork;
 
   const result = await query(
-    `UPDATE tasks SET title=$1, description=$2, priority=$3, project=$4, status=$5, task_order=$6, total_work=$7, updated_at=NOW()
+    `UPDATE tasks SET title=$1, description=$2, priority=$3, project=$4, status=$5, task_order=$6, total_work=$7,
+      started_at = CASE WHEN $5 = 'in_progress' AND started_at IS NULL THEN NOW() ELSE started_at END,
+      updated_at = NOW()
      WHERE id=$8
-     RETURNING id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text`,
+     RETURNING id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text, started_at::text`,
     [title, description, priority, project, status, order, totalWork, Number(id)]
   );
   const row = result.rows[0];
@@ -162,6 +168,7 @@ export async function update(id, data) {
     totalWork: row.total_work,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    startedAt: row.started_at,
   };
 }
 
@@ -173,7 +180,7 @@ export async function remove(id) {
 export async function getByStatus(status) {
   await ensureSchema();
   const result = await query(
-    'SELECT id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text FROM tasks WHERE status = $1 ORDER BY task_order ASC',
+    'SELECT id, title, description, priority, project, status, task_order, total_work, created_at::text, updated_at::text, started_at::text FROM tasks WHERE status = $1 ORDER BY task_order ASC',
     [status]
   );
   return result.rows.map(row => ({
@@ -187,5 +194,6 @@ export async function getByStatus(status) {
     totalWork: row.total_work,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    startedAt: row.started_at,
   }));
 }
