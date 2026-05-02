@@ -37,8 +37,8 @@ function Board() {
       <div className="px-6 py-2 border-b">
         <p className="text-sm text-muted-foreground">{statsLine}</p>
       </div>
-      <main className="flex-1 p-6 overflow-x-auto">
-        <KanbanBoard />
+      <main className="flex-1 overflow-x-auto p-6 flex items-stretch">
+        <KanbanBoard onAdd={addTask} className="min-h-full" />
       </main>
       <AddTaskForm open={dialogOpen} onOpenChange={setDialogOpen} onAdd={addTask} />
     </div>

@@ -4,7 +4,7 @@ import { TaskCard } from './TaskCard';
 
 export function TaskColumn({ column, tasks, onUpdate, onDelete }) {
   return (
-    <div className="w-72 shrink-0 flex flex-col">
+    <div className="w-72 shrink-0 flex flex-col min-h-full">
       <div className={`flex items-center justify-between px-3 py-2.5 rounded-t-lg border border-l-4 ${column.borderColor}`}>
         <div className="flex items-center gap-2">
           <span className={`w-2 h-2 rounded-full shrink-0 ${column.dotColor}`} />
@@ -18,7 +18,7 @@ export function TaskColumn({ column, tasks, onUpdate, onDelete }) {
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`flex-1 min-h-32 p-2 rounded-b-lg border-x border-b transition-colors ${
+            className={`flex-1 min-h-0 p-2 rounded-b-lg border-x border-b transition-colors ${
               snapshot.isDraggingOver ? 'bg-primary/5' : 'bg-muted/10'
             }`}
           >
