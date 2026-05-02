@@ -10,7 +10,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { MoreHorizontal, Pencil, Trash2, X, Check } from 'lucide-react';
+import {
+  Folder,
+  MoreHorizontal,
+  Pencil,
+  Trash2,
+  Zap,
+} from 'lucide-react';
 import { useState } from 'react';
 
 const PRIORITIES = [
@@ -50,21 +56,27 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
 
   if (editing) {
     return (
-      <Card className="mb-2 p-3 space-y-3 border-border">
+      <Card className="mb-2 p-2.5 space-y-2 border-primary/40 ring-1 ring-primary/10">
         <Input
           value={form.title}
           onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-          className="h-10 font-medium"
+          className="h-8 text-sm font-medium"
           autoFocus
           onKeyDown={(e) => e.key === 'Enter' && form.title.trim() && save()}
         />
         <Textarea
           value={form.description}
           onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-          placeholder="Notes, links, or context..."
+          placeholder="Notes..."
           rows={2}
-          className="resize-none text-sm"
+          className="resize-none text-xs"
         />
+        {task.project && (
+          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border w-fit">
+            <Folder className="w-3 h-3 shrink-0" />
+            {task.project}
+          </span>
+        )}
         <div className="flex rounded-lg border border-border overflow-hidden">
           {PRIORITIES.map((p) => {
             const active = form.priority === p.value;
@@ -73,7 +85,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
                 key={p.value}
                 type="button"
                 onClick={() => handlePriorityChange(p.value)}
-                className={`flex-1 flex items-center justify-center gap-1.5 h-9 text-xs font-medium transition-colors border-r last:border-r-0 border-border
+                className={`flex-1 flex items-center justify-center gap-1 h-7 text-xs font-medium transition-colors border-r last:border-r-0 border-border
                   ${active
                     ? p.value === 'high'
                       ? 'bg-red-500 text-white border-red-500'
@@ -81,19 +93,21 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
                     : 'bg-background text-muted-foreground hover:bg-muted/40'
                   }`}
               >
-                <span className={`w-1.5 h-1.5 rounded-full ${active && p.value === 'normal' ? 'bg-background/60' : p.dot}`} />
+                {p.value === 'high' ? (
+                  <Zap className={`w-2.5 h-2.5 ${active ? 'text-white' : 'text-red-500'}`} />
+                ) : (
+                  <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-background/60' : p.dot}`} />
+                )}
                 {p.label}
               </button>
             );
           })}
         </div>
-        <div className="flex gap-2 pt-1">
-          <Button size="sm" onClick={save} disabled={!form.title.trim()} className="gap-1.5">
-            <Check className="w-3.5 h-3.5" />
+        <div className="flex gap-1.5">
+          <Button size="sm" onClick={save} disabled={!form.title.trim()} className="flex-1 h-7 text-xs">
             Save
           </Button>
-          <Button size="sm" variant="outline" onClick={cancel} className="gap-1.5">
-            <X className="w-3.5 h-3.5" />
+          <Button size="sm" variant="outline" onClick={cancel} className="flex-1 h-7 text-xs">
             Cancel
           </Button>
         </div>

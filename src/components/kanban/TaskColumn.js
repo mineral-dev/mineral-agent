@@ -56,7 +56,9 @@ export function TaskColumn({ column, tasks, onUpdate, onDelete }) {
             {provided.placeholder}
             {tasks.length === 0 && !snapshot.isDraggingOver && (
               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <p className="text-xs text-muted-foreground">Nothing here yet</p>
+                <p className="text-xs text-muted-foreground">
+                  Nothing here yet
+                </p>
                 <p className="text-xs text-muted-foreground/60 mt-0.5">
                   Drag a card here
                 </p>

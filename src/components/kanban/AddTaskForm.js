@@ -1,8 +1,8 @@
-'use client';
-import { useState, useCallback } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+"use client";
+import { useState, useCallback } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +10,7 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
-} from '@/components/ui/dialog';
+} from "@/components/ui/dialog";
 import {
   Sheet,
   SheetContent,
@@ -18,15 +18,20 @@ import {
   SheetTitle,
   SheetDescription,
   SheetFooter,
-} from '@/components/ui/sheet';
-import { Plus, X, Zap } from 'lucide-react';
-import { useMediaQuery } from '@/hooks/useMediaQuery';
+} from "@/components/ui/sheet";
+import { Plus, X, Zap } from "lucide-react";
+import { useMediaQuery } from "@/hooks/useMediaQuery";
 
-const defaultForm = { title: '', description: '', priority: 'normal', project: '' };
+const defaultForm = {
+  title: "",
+  description: "",
+  priority: "normal",
+  project: "",
+};
 
 const PRIORITIES = [
-  { value: 'normal', label: 'Normal', dot: 'bg-muted-foreground/50' },
-  { value: 'high', label: 'High', dot: 'bg-red-500' },
+  { value: "normal", label: "Normal", dot: "bg-muted-foreground/50" },
+  { value: "high", label: "High", dot: "bg-red-500" },
 ];
 
 function TaskFormInner({ form, setForm, onSubmit, error }) {
@@ -42,28 +47,38 @@ function TaskFormInner({ form, setForm, onSubmit, error }) {
         </div>
       )}
       <div>
-        <label className="text-sm font-medium text-foreground mb-1.5 block">Title *</label>
+        <label className="text-sm font-medium text-foreground mb-1.5 block">
+          Title *
+        </label>
         <Input
           placeholder="What needs to be done?"
           value={form.title}
           onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-          onKeyDown={(e) => e.key === 'Enter' && form.title.trim() && onSubmit()}
+          onKeyDown={(e) =>
+            e.key === "Enter" && form.title.trim() && onSubmit()
+          }
           autoFocus
           className="h-11"
         />
       </div>
       <div>
-        <label className="text-sm font-medium text-foreground mb-1.5 block">Description</label>
+        <label className="text-sm font-medium text-foreground mb-1.5 block">
+          Description
+        </label>
         <Textarea
           placeholder="Notes, links, or context..."
           value={form.description}
-          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+          onChange={(e) =>
+            setForm((f) => ({ ...f, description: e.target.value }))
+          }
           rows={3}
           className="resize-none"
         />
       </div>
       <div>
-        <label className="text-sm font-medium text-foreground mb-1.5 block">Priority</label>
+        <label className="text-sm font-medium text-foreground mb-1.5 block">
+          Priority
+        </label>
         <div className="flex rounded-xl border border-border overflow-hidden">
           {PRIORITIES.map((p) => {
             const active = form.priority === p.value;
@@ -73,17 +88,23 @@ function TaskFormInner({ form, setForm, onSubmit, error }) {
                 type="button"
                 onClick={() => handlePriorityChange(p.value)}
                 className={`flex-1 flex items-center justify-center gap-2 h-11 text-sm font-medium transition-colors border-r last:border-r-0 border-border
-                  ${active
-                    ? p.value === 'high'
-                      ? 'bg-red-500 text-white border-red-500'
-                      : 'bg-foreground text-background'
-                    : 'bg-background text-muted-foreground hover:bg-muted/40'
+                  ${
+                    active
+                      ? p.value === "high"
+                        ? "bg-red-500 text-white border-red-500"
+                        : "bg-foreground text-background"
+                      : "bg-background text-muted-foreground hover:bg-muted/40"
                   }`}
               >
-                {p.value === 'high'
-                  ? <Zap className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-red-500'}`} />
-                  : <span className={`w-2 h-2 rounded-full ${active ? 'bg-background/60' : p.dot}`} />
-                }
+                {p.value === "high" ? (
+                  <Zap
+                    className={`w-3.5 h-3.5 ${active ? "text-white" : "text-red-500"}`}
+                  />
+                ) : (
+                  <span
+                    className={`w-2 h-2 rounded-full ${active ? "bg-background/60" : p.dot}`}
+                  />
+                )}
                 {p.label}
               </button>
             );
@@ -91,7 +112,9 @@ function TaskFormInner({ form, setForm, onSubmit, error }) {
         </div>
       </div>
       <div>
-        <label className="text-sm font-medium text-foreground mb-1.5 block">Project</label>
+        <label className="text-sm font-medium text-foreground mb-1.5 block">
+          Project
+        </label>
         <Input
           placeholder="Add project name (optional)"
           value={form.project}
@@ -119,7 +142,7 @@ function FormButtons({ onCancel, onSubmit, isSubmitting, titleEmpty }) {
         disabled={titleEmpty || isSubmitting}
         className="flex-1 h-11"
       >
-        {isSubmitting ? 'Creating...' : 'Create Task'}
+        {isSubmitting ? "Creating..." : "Create Task"}
       </Button>
     </>
   );
@@ -129,11 +152,11 @@ export function AddTaskForm({ open, onOpenChange, onAdd }) {
   const [form, setForm] = useState(defaultForm);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
-  const isDesktop = useMediaQuery('(min-width: 768px)');
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const submit = useCallback(async () => {
     if (!form.title.trim()) {
-      setError('Title is required');
+      setError("Title is required");
       return;
     }
     if (isSubmitting) return;
@@ -141,11 +164,11 @@ export function AddTaskForm({ open, onOpenChange, onAdd }) {
     setIsSubmitting(true);
     setError(null);
     try {
-      await onAdd({ ...form, status: 'not_started' });
+      await onAdd({ ...form, status: "not_started" });
       setForm(defaultForm);
       onOpenChange(false);
     } catch (err) {
-      setError(err.message || 'Failed to create task. Please try again.');
+      setError(err.message || "Failed to create task. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -188,7 +211,7 @@ export function AddTaskForm({ open, onOpenChange, onAdd }) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="px-4 pb-6 pt-4 rounded-t-2xl">
+      <SheetContent side="bottom" className="pb-6 pt-4 rounded-t-2xl">
         <SheetHeader className="pb-4">
           <div className="flex items-center justify-between">
             <SheetTitle className="text-lg">New Task</SheetTitle>
@@ -197,12 +220,14 @@ export function AddTaskForm({ open, onOpenChange, onAdd }) {
             Fill in the details below and set a priority.
           </SheetDescription>
         </SheetHeader>
-        <TaskFormInner
-          form={form}
-          setForm={setForm}
-          onSubmit={submit}
-          error={error}
-        />
+        <div className="px-4">
+          <TaskFormInner
+            form={form}
+            setForm={setForm}
+            onSubmit={submit}
+            error={error}
+          />
+        </div>
         <SheetFooter className="flex-row gap-3 pt-4">
           <FormButtons
             onCancel={cancel}

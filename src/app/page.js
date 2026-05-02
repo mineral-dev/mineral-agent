@@ -14,7 +14,7 @@ function Board() {
 
   return (
     <div className="relative flex flex-col min-h-screen">
-      <header className="sticky top-0 z-10 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 border-b">
+      <header className="sticky top-0 z-10 bg-background backdrop-blur border-b">
         <div className="px-4 sm:px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
@@ -53,17 +53,6 @@ function Board() {
       <main className="flex-1 py-4 sm:py-6">
         <KanbanBoard onAdd={addTask} className="min-h-full" />
       </main>
-
-      {/* Mobile FAB */}
-      {!isDesktop && (
-        <button
-          onClick={() => setDialogOpen(true)}
-          className="fixed bottom-6 right-6 w-14 h-14 bg-primary text-primary-foreground rounded-2xl active:scale-95 active:bg-primary/90 flex items-center justify-center transition-all z-50"
-          aria-label="Add new task"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
-      )}
 
       <AddTaskForm
         open={dialogOpen}

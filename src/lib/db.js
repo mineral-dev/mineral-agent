@@ -1,9 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import { fileURLToPath } from 'url';
 
-const __filename = fileURLToPath(import.meta.url);
-const DATA_FILE = '/Users/andy/Project/mineral-agent/data/tasks.json';
+const DATA_FILE = path.join(process.cwd(), 'data', 'tasks.json');
 
 // Ensure data dir exists
 const DATA_DIR = path.dirname(DATA_FILE);
@@ -16,6 +14,9 @@ function readTasks() {
     return [];
   }
   const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+  if (!raw.trim()) {
+    return [];
+  }
   return JSON.parse(raw);
 }
 
@@ -28,14 +29,27 @@ export function getAll() {
 }
 
 export function create(data) {
+  if (!data || typeof data !== 'object') {
+    throw new Error('Task data is required');
+  }
+
+  const title = typeof data.title === 'string' ? data.title.trim() : '';
+  if (!title) {
+    throw new Error('Task title is required');
+  }
+
   const tasks = readTasks();
   const maxId = tasks.reduce((max, t) => Math.max(max, t.id || 0), 0);
   const task = {
     id: maxId + 1,
-    title: data.title,
-    description: data.description || null,
+    title,
+    description: typeof data.description === 'string' && data.description.trim()
+      ? data.description.trim()
+      : null,
     priority: data.priority || 'normal',
-    project: data.project || null,
+    project: typeof data.project === 'string' && data.project.trim()
+      ? data.project.trim()
+      : null,
     status: data.status || 'not_started',
     order: typeof data.order === 'number' ? data.order : 0,
     createdAt: new Date().toISOString(),

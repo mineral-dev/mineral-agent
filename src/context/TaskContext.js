@@ -1,5 +1,5 @@
 'use client';
-import { createContext, useContext, useState, useCallback } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { api } from '@/lib/api';
 
 const TaskContext = createContext(null);
@@ -7,6 +7,11 @@ const TaskContext = createContext(null);
 export function TaskProvider({ children }) {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  // Load tasks on mount
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
 
   const COLUMNS = [
     { id: 'not_started',    label: 'Not Started',    dotColor: 'bg-neutral-400', borderColor: 'border-l-neutral-400' },
