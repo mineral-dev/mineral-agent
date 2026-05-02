@@ -10,6 +10,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
+  Clock,
   Folder,
   MoreHorizontal,
   Pencil,
@@ -156,7 +157,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
         {task.description && (
           <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
         )}
-        {(task.priority === 'high' || task.project) && (
+        {(task.priority === 'high' || task.project || (task.totalWork && ['in_progress','in_review','completed'].includes(task.status))) && (
           <div className="flex gap-1.5 flex-wrap pt-1">
             {task.priority === 'high' && (
               <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-medium">
@@ -168,6 +169,14 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
               <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
                 <Folder className="w-3 h-3 shrink-0" />
                 {task.project}
+              </span>
+            )}
+            {task.totalWork && ['in_progress','in_review','completed'].includes(task.status) && (
+              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-medium">
+                <Clock className="w-3 h-3 shrink-0" />
+                {task.totalWork >= 60
+                  ? `${Math.floor(task.totalWork / 60)}h ${task.totalWork % 60 > 0 ? `${task.totalWork % 60}m` : ''}`.trim()
+                  : `${task.totalWork}m`}
               </span>
             )}
           </div>
