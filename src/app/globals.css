@@ -143,3 +143,8 @@
     -webkit-line-clamp: 2;
   }
 }
+
+@keyframes agent-spark {
+  0%, 100% { opacity: 0.15; transform: scale(0.5) rotate(45deg); }
+  50% { opacity: 1; transform: scale(1.1) rotate(45deg); }
+}
