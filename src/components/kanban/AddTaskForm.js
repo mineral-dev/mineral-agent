@@ -31,9 +31,8 @@ const defaultForm = {
 };
 
 const PRIORITIES = [
-  { value: "high", label: "High", dot: "bg-red-500" },
   { value: "normal", label: "Normal", dot: "bg-muted-foreground/50" },
-  { value: "low", label: "Low", dot: "bg-blue-400" },
+  { value: "high", label: "High", dot: "bg-red-500" },
 ];
 
 function TaskFormInner({ form, setForm, onSubmit, error }) {
@@ -94,9 +93,7 @@ function TaskFormInner({ form, setForm, onSubmit, error }) {
                     active
                       ? p.value === "high"
                         ? "bg-red-500 text-white border-red-500"
-                        : p.value === "low"
-                          ? "bg-blue-500 text-white border-blue-500"
-                          : "bg-foreground text-background"
+                        : "bg-foreground text-background"
                       : "bg-background text-muted-foreground hover:bg-muted/40"
                   }`}
               >
@@ -120,7 +117,7 @@ function TaskFormInner({ form, setForm, onSubmit, error }) {
           Project
         </label>
         <Input
-          placeholder="mineral-dev/repo-name (optional)"
+          placeholder="e.g. owner/repo-name"
           value={form.project}
           onChange={(e) => setForm((f) => ({ ...f, project: e.target.value }))}
           className="h-11 font-mono"
@@ -198,7 +195,7 @@ export function AddTaskForm({ open, onOpenChange, onAdd }) {
           <DialogHeader>
             <DialogTitle className="text-lg">Create New Task</DialogTitle>
             <DialogDescription className="text-sm">
-              Add a task for the AI agent to work on. Set a title and optional description, then choose a priority.
+              Describe the task and choose a priority. Higher priority tasks get picked up first.
             </DialogDescription>
           </DialogHeader>
           <TaskFormInner
@@ -228,7 +225,7 @@ export function AddTaskForm({ open, onOpenChange, onAdd }) {
             <SheetTitle className="text-lg">New Task</SheetTitle>
           </div>
           <SheetDescription className="text-sm">
-            Add a task for the AI agent to work on. Set a title and optional description, then choose a priority.
+            Describe the task and choose a priority. Higher priority tasks get picked up first.
           </SheetDescription>
         </SheetHeader>
         <div className="px-4">

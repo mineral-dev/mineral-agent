@@ -134,6 +134,22 @@
   html[data-theme="dark"] {
     color-scheme: dark;
   }
+  html,
+  html.dark {
+    scrollbar-color: oklch(0.556 0 0) oklch(0.97 0 0);
+  }
+  @media (prefers-color-scheme: dark) {
+    html {
+      color-scheme: dark;
+    }
+    html:not(.dark) {
+      color-scheme: light;
+    }
+    html,
+    html:not(.dark) {
+      scrollbar-color: oklch(0.708 0 0) oklch(0.269 0 0);
+    }
+  }
 }
 
 @layer utilities {
