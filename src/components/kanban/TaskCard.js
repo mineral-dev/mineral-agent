@@ -1,5 +1,5 @@
 "use client";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CircleDot, FolderKanban, GitPullRequest, Pencil, Trash2, Zap, Clock3 } from "lucide-react";
@@ -31,7 +31,32 @@ const DEFAULT_FORM = {
 export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
   const [view, setView] = useState(null);
   const [form, setForm] = useState(DEFAULT_FORM);
+  const [prMergeStatus, setPrMergeStatus] = useState(null);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+
+  useEffect(() => {
+    if (!task.prUrl || task.status !== "in_review") return;
+    const match = task.prUrl.match(/\/pull\/(\d+)/);
+    if (!match) return;
+    const prNumber = match[1];
+    let cancelled = false;
+    fetch(`https://api.github.com/repos/mineral-dev/mineral-agent/pulls/${prNumber}`)
+      .then((r) => r.json())
+      .then((data) => {
+        if (cancelled) return;
+        if (data.mergeable_state === "clean" || data.mergeable === true) {
+          setPrMergeStatus("clean");
+        } else if (data.mergeable_state === "dirty" || data.mergeable === false) {
+          setPrMergeStatus("dirty");
+        } else {
+          setPrMergeStatus("unknown");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setPrMergeStatus("unknown");
+      });
+    return () => { cancelled = true; };
+  }, [task.prUrl, task.status]);
 
   const openEdit = useCallback(() => {
     setForm({
@@ -241,7 +266,13 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
                   target="_blank"
                   rel="noopener noreferrer"
                   onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 rounded-full border border-violet-100 bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-600 hover:underline dark:border-violet-900/40 dark:bg-violet-950/40 dark:text-violet-400"
+                  className={
+                    prMergeStatus === "clean"
+                      ? "inline-flex items-center gap-1 rounded-full border border-green-200 bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700 hover:underline dark:border-green-800/40 dark:bg-green-950/40 dark:text-green-400"
+                      : prMergeStatus === "dirty"
+                        ? "inline-flex items-center gap-1 rounded-full border border-red-200 bg-red-50 px-2 py-0.5 text-[11px] font-medium text-red-600 hover:underline dark:border-red-800/40 dark:bg-red-950/40 dark:text-red-400"
+                        : "inline-flex items-center gap-1 rounded-full border border-violet-100 bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-600 hover:underline dark:border-violet-900/40 dark:bg-violet-950/40 dark:text-violet-400"
+                  }
                 >
                   <GitPullRequest className="h-2.5 w-2.5 shrink-0" />
                   PR
