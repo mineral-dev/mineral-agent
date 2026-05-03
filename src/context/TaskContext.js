@@ -54,6 +54,12 @@ export function TaskProvider({ children }) {
   }, [mutate]);
 
   const moveTask = useCallback(async (taskId, newStatus, newOrder, reason, note) => {
+    await mutate((current = []) => current.map((task) =>
+      Number(task.id) === Number(taskId)
+        ? { ...task, status: newStatus, order: newOrder }
+        : task
+    ), { revalidate: false, populateCache: true });
+
     const result = await api.move(taskId, {
       status: newStatus,
       order: newOrder,
