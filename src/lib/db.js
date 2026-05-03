@@ -438,6 +438,8 @@ export async function update(id, data) {
   });
 }
 
+const PRIORITY_ESTIMATE_MINUTES = { high: 30, normal: 60, low: 120 };
+
 export async function move(id, data) {
   await ensureSchema();
   const payload = normalizeTaskInput(data);
@@ -464,7 +466,14 @@ export async function move(id, data) {
       const sourceStatus = current.status;
       const targetStatus = data.status !== undefined ? payload.status : current.status;
       const targetOrder = payload.order == null ? current.order : payload.order;
-      const nextEstimatedWork = payload.estimatedWork != null ? payload.estimatedWork : current.estimatedWork;
+      const nextEstimatedWork = (() => {
+        if (payload.estimatedWork != null) return payload.estimatedWork;
+        if (current.estimatedWork != null) return current.estimatedWork;
+        if (targetStatus === 'in_progress') {
+          return PRIORITY_ESTIMATE_MINUTES[current.priority] ?? PRIORITY_ESTIMATE_MINUTES.normal;
+        }
+        return null;
+      })();
       const nextCompletedAt = payload.completedAt !== undefined
         ? payload.completedAt
         : (isCompleted(targetStatus)
