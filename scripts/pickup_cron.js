@@ -10,13 +10,18 @@ const client = new Client({ connectionString, ssl: { rejectUnauthorized: false }
 async function main() {
   await client.connect();
   
-  // Find next ready_to_start task
+  // Find next ready_to_start task — high > normal > low
   const result = await client.query(`
     SELECT id, title, description, priority, project, total_work, created_at
     FROM tasks
     WHERE status = 'ready_to_start'
     ORDER BY
-      CASE WHEN priority = 'high' THEN 0 ELSE 1 END,
+      CASE priority
+        WHEN 'high'   THEN 0
+        WHEN 'normal' THEN 1
+        WHEN 'low'    THEN 2
+        ELSE 3
+      END,
       COALESCE(total_work, 999999) ASC,
       created_at ASC
     LIMIT 1
