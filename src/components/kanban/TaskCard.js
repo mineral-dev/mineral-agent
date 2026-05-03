@@ -34,6 +34,18 @@ import { useState, useCallback } from "react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
+const REASON_LABELS = {
+  conflict_when_merge_to_main: "🔴 Conflict on merge",
+  manual_review_failed: "🟡 Review failed",
+  other: "⚪ Returned",
+};
+
+const REASON_STYLES = {
+  conflict_when_merge_to_main: "border-red-500/30 bg-red-500/10 text-red-600 dark:text-red-400",
+  manual_review_failed: "border-yellow-500/30 bg-yellow-500/10 text-yellow-600 dark:text-yellow-400",
+  other: "border-muted bg-muted/50 text-muted-foreground",
+};
+
 const PRIORITIES = [
   { value: "high", label: "High", dot: "bg-red-500" },
   { value: "normal", label: "Normal", dot: "bg-muted-foreground/50" },
@@ -207,7 +219,19 @@ function TaskDetailInner({ task, formatTime, projectLabel, showTimeWork }) {
           <Badge variant="outline" className="rounded-full px-3 py-1">
             {STATUS_LABELS[task.status] || task.status}
           </Badge>
+          {task.backToReadyReason && (
+            <span
+              className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${REASON_STYLES[task.backToReadyReason] || "border-muted bg-muted/50 text-muted-foreground"}`}
+            >
+              {REASON_LABELS[task.backToReadyReason] || task.backToReadyReason}
+            </span>
+          )}
         </div>
+        {task.backToReadyReason && task.backToReadyNote && (
+          <p className="mt-1 text-xs text-muted-foreground italic">
+            Note: {task.backToReadyNote}
+          </p>
+        )}
 
         <h2 className="text-lg font-semibold leading-tight text-foreground sm:text-xl">
           {task.title}
@@ -565,6 +589,13 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
                   <GitPullRequest className="w-2.5 h-2.5 shrink-0" />
                   PR
                 </a>
+              )}
+              {task.backToReadyReason && (
+                <span
+                  className={`inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full border font-semibold ${REASON_STYLES[task.backToReadyReason] || "border-muted bg-muted/50 text-muted-foreground"}`}
+                >
+                  {REASON_LABELS[task.backToReadyReason] || task.backToReadyReason}
+                </span>
               )}
             </div>
           )}

@@ -86,23 +86,29 @@ export function TaskProvider({ children }) {
     } catch { /* ignore */ }
   }, []);
 
-  const moveTask = useCallback(async (taskId, newStatus, newOrder) => {
+  const moveTask = useCallback(async (taskId, newStatus, newOrder, reason, note) => {
     setTasks(prev => {
       const others = prev.filter(t => t.id != taskId);
       const task = prev.find(t => t.id == taskId);
       if (!task) return prev;
       const updated = { ...task, status: newStatus, order: newOrder };
-      
+
       if (newStatus !== 'completed') {
         const inDest = others.filter(t => t.status === newStatus);
         const elsewhere = others.filter(t => t.status !== newStatus);
         inDest.splice(newOrder, 0, updated);
         return [...elsewhere, ...inDest];
       }
-      
+
       return [...others, updated];
     });
-    await api.update(taskId, { status: newStatus });
+
+    const payload = { status: newStatus };
+    if ((newStatus === 'ready_to_start' || newStatus === 'not_started') && reason) {
+      payload.backToReadyReason = reason;
+      if (note) payload.backToReadyNote = note;
+    }
+    await api.update(taskId, payload);
   }, []);
 
   const value = { tasks, COLUMNS, refresh, addTask, updateTask, deleteTask, moveTask };
