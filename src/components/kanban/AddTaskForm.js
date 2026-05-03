@@ -21,6 +21,7 @@ import {
 } from "@/components/ui/sheet";
 import { Plus, X, Zap } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const defaultForm = {
   title: "",
@@ -161,7 +162,7 @@ function FormButtons({ onCancel, onSubmit, isSubmitting, titleEmpty }) {
       >
         {isSubmitting ? (
           <>
-            <AgentSparkLoader />
+            <LoadingSpinner />
             Creating
           </>
         ) : (

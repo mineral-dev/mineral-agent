@@ -22,18 +22,30 @@ export function TaskProvider({ children }) {
     try {
       const data = await api.list();
       setTasks(data.data || []);
+      localStorage.setItem('mineral_tasks', JSON.stringify(data.data || []));
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Load tasks on mount
+  // Load tasks on mount - use cached data first, then fetch fresh data
   useEffect(() => {
+    const cached = localStorage.getItem('mineral_tasks');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        setTasks(parsed);
+      } catch {
+        // ignore parse errors
+      }
+    }
+
     const load = async () => {
       setLoading(true);
       try {
         const data = await api.list();
         setTasks(data.data || []);
+        localStorage.setItem('mineral_tasks', JSON.stringify(data.data || []));
       } finally {
         setLoading(false);
       }
