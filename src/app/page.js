@@ -4,24 +4,20 @@ import { TaskProvider, useTasks } from "@/context/TaskContext";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { AddTaskForm } from "@/components/kanban/AddTaskForm";
 import { Button } from "@/components/ui/button";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Plus } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 function Board() {
-  const { tasks, addTask } = useTasks();
+  const { addTask } = useTasks();
   const [dialogOpen, setDialogOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   return (
-    <div className="relative flex flex-col min-h-screen">
-      <header className="sticky top-0 z-10 bg-background backdrop-blur border-b">
-        <div className="px-4 sm:px-6 h-16 flex items-center justify-between">
+    <div className="relative flex min-h-screen flex-col bg-background text-foreground transition-colors duration-300">
+      <header className="sticky top-0 z-10 border-b border-border/80 bg-background/85 backdrop-blur-xl">
+        <div className="flex h-16 items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center">
-              <span className="text-primary-foreground text-sm font-bold">
-                M
-              </span>
-            </div>
             <div>
               <h1 className="text-base font-semibold">Mineral Agent</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">
@@ -29,28 +25,31 @@ function Board() {
               </p>
             </div>
           </div>
-          {isDesktop ? (
-            <Button
-              onClick={() => setDialogOpen(true)}
-              size="sm"
-              className="gap-1.5"
-            >
-              <Plus className="w-4 h-4" />
-              New Task
-            </Button>
-          ) : (
-            <Button
-              onClick={() => setDialogOpen(true)}
-              size="icon"
-              className="h-10 w-10 rounded-xl"
-            >
-              <Plus className="w-5 h-5" />
-            </Button>
-          )}
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            {isDesktop ? (
+              <Button
+                onClick={() => setDialogOpen(true)}
+                size="sm"
+                className="gap-1.5"
+              >
+                <Plus className="w-4 h-4" />
+                New Task
+              </Button>
+            ) : (
+              <Button
+                onClick={() => setDialogOpen(true)}
+                size="icon"
+                className="h-10 w-10 rounded-xl"
+              >
+                <Plus className="w-5 h-5" />
+              </Button>
+            )}
+          </div>
         </div>
       </header>
 
-      <main className="flex-1 py-4 sm:py-6">
+      <main className="flex-1 py-4 transition-colors duration-300 sm:py-6">
         <KanbanBoard onAdd={addTask} className="min-h-full" />
       </main>
 
