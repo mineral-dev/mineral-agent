@@ -169,7 +169,7 @@ function EditFormInner({ form, setForm, onSubmit }) {
           placeholder="mineral-dev/repo-name (optional)"
           value={form.project}
           onChange={(e) => setForm((f) => ({ ...f, project: e.target.value }))}
-          className="h-11"
+          className="h-11 font-mono"
         />
       </div>
     </div>

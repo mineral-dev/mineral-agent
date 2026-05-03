@@ -119,7 +119,7 @@ function TaskFormInner({ form, setForm, onSubmit, error }) {
           placeholder="mineral-dev/repo-name (optional)"
           value={form.project}
           onChange={(e) => setForm((f) => ({ ...f, project: e.target.value }))}
-          className="h-11"
+          className="h-11 font-mono"
         />
       </div>
     </div>
@@ -134,7 +134,7 @@ function AgentSparkLoader() {
           key={i}
           className="block w-[5px] h-[5px] bg-current"
           style={{
-            clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+            clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)",
             animation: `agent-spark 1s ease-in-out ${i * 0.14}s infinite`,
           }}
         />
