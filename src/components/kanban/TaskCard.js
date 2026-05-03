@@ -342,26 +342,53 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
       showTimeWork={showTimeWork}
     />
   );
-  const detailButtons = (
-    <>
-      <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:justify-end">
-        <Button onClick={openEdit} className="h-11 gap-2 shadow-sm sm:px-5">
+
+  // Desktop (Dialog): Delete left, Edit+Close grouped right
+  const desktopDetailButtons = (
+    <div className="flex justify-between w-full">
+      <Button
+        variant="outline"
+        onClick={deleteTask}
+        className="h-11 gap-2 border-destructive/20 text-destructive hover:bg-destructive/10 hover:text-destructive px-5"
+      >
+        <Trash2 className="w-4 h-4" />
+        Delete
+      </Button>
+      <div className="flex gap-3">
+        <Button onClick={openEdit} className="h-11 gap-2 shadow-sm px-5">
           <Pencil className="w-4 h-4" />
           Edit Task
         </Button>
         <Button
-          variant="outline"
-          onClick={deleteTask}
-          className="h-11 gap-2 border-destructive/20 text-destructive hover:bg-destructive/10 hover:text-destructive sm:px-4"
+          variant="ghost"
+          onClick={closeDetail}
+          className="h-11 px-4 text-muted-foreground hover:text-foreground"
         >
-          <Trash2 className="w-4 h-4" />
-          Delete
+          Close
         </Button>
       </div>
+    </div>
+  );
+
+  // Mobile (Sheet): Edit Task → Delete → Close (horizontal stack)
+  const mobileDetailButtons = (
+    <>
+      <Button onClick={openEdit} className="flex-1 h-11 gap-2 shadow-sm">
+        <Pencil className="w-4 h-4" />
+        Edit Task
+      </Button>
+      <Button
+        variant="outline"
+        onClick={deleteTask}
+        className="flex-1 h-11 gap-2 border-destructive/20 text-destructive hover:bg-destructive/10 hover:text-destructive"
+      >
+        <Trash2 className="w-4 h-4" />
+        Delete
+      </Button>
       <Button
         variant="ghost"
         onClick={closeDetail}
-        className="h-11 px-4 text-muted-foreground hover:text-foreground"
+        className="flex-1 h-11 text-muted-foreground hover:text-foreground"
       >
         Close
       </Button>
@@ -381,8 +408,8 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
                 <DialogTitle className="text-lg">Task Detail</DialogTitle>
               </DialogHeader>
               {detailContent}
-              <DialogFooter className="flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
-                {detailButtons}
+              <DialogFooter>
+                {desktopDetailButtons}
               </DialogFooter>
             </div>
           </DialogContent>
@@ -398,7 +425,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
                 <SheetTitle className="text-lg">Task Detail</SheetTitle>
               </SheetHeader>
               <div className="px-4">{detailContent}</div>
-              <SheetFooter className="gap-3 pt-4">{detailButtons}</SheetFooter>
+              <SheetFooter className="flex-row gap-2 pt-4">{mobileDetailButtons}</SheetFooter>
             </div>
           </SheetContent>
         </Sheet>

@@ -7,6 +7,7 @@ const CACHE_KEY = 'mineral_tasks';
 
 export function TaskProvider({ children }) {
   const [tasks, setTasks] = useState([]);
+  const [loading, setLoading] = useState(false);
 
   const COLUMNS = [
     { id: 'not_started',    label: 'To Do',           dotColor: 'bg-neutral-400', borderColor: 'border-l-neutral-400' },
@@ -109,7 +110,7 @@ export function TaskProvider({ children }) {
     await api.update(taskId, payload);
   }, []);
 
-  const value = { tasks, COLUMNS, refresh, addTask, updateTask, deleteTask, moveTask };
+  const value = { tasks, loading, COLUMNS, refresh, addTask, updateTask, deleteTask, moveTask };
   return <TaskContext.Provider value={value}>{children}</TaskContext.Provider>;
 }
 
