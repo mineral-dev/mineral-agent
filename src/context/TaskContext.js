@@ -3,8 +3,6 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import { api } from '@/lib/api';
 
 const TaskContext = createContext(null);
-const CACHE_KEY = 'mineral-agent-tasks-cache';
-
 const CACHE_KEY = 'mineral_tasks';
 
 export function TaskProvider({ children }) {

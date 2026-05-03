@@ -22,7 +22,6 @@ import {
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Plus, X, Zap } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
-import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const defaultForm = {
   title: "",
