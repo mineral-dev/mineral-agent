@@ -6,7 +6,9 @@ import { TASK_STATUS_HELP } from "@/lib/tasks";
 
 export function TaskColumn({ column, tasks, onUpdate, onDelete, draggedTaskStatus }) {
   const isNotStartedDrag = draggedTaskStatus === "not_started";
+  const isInReviewDrag = draggedTaskStatus === "in_review";
   const isOnlyValidTarget = !isNotStartedDrag || column.id === "ready_to_start";
+  const showCompletedHint = isInReviewDrag && column.id === "completed";
 
   return (
     <div className="w-64 sm:w-72 shrink-0 flex flex-col min-h-full translate-x-4 sm:translate-x-6">
@@ -35,7 +37,9 @@ export function TaskColumn({ column, tasks, onUpdate, onDelete, draggedTaskStatu
                 ? snapshot.isDraggingOver
                   ? "bg-blue-500/7 border-blue-500/30"
                   : "bg-blue-500/4 border-dashed border-blue-500/15"
-                : "bg-muted/5"
+                : showCompletedHint && snapshot.isDraggingOver
+                  ? "bg-emerald-500/15 border-emerald-500/30"
+                  : "bg-muted/5"
             } ${isNotStartedDrag && !isOnlyValidTarget ? "cursor-not-allowed" : ""}`}
           >
             {tasks.map((task, index) => (
@@ -91,6 +95,11 @@ export function TaskColumn({ column, tasks, onUpdate, onDelete, draggedTaskStatu
             {isNotStartedDrag && !isOnlyValidTarget && (
               <div className="pointer-events-none absolute inset-x-2 bottom-2 rounded-lg border border-dashed border-muted-foreground/15 bg-muted/20 px-3 py-2 text-center text-[11px] uppercase tracking-wide text-muted-foreground/70">
                 Drop disabled
+              </div>
+            )}
+            {showCompletedHint && snapshot.isDraggingOver && (
+              <div className="pointer-events-none absolute inset-x-2 bottom-2 rounded-lg border border-dashed border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-center text-[11px] uppercase tracking-wide text-emerald-600/80">
+                Drop here to complete
               </div>
             )}
           </div>
