@@ -13,16 +13,10 @@ function applyTheme(theme) {
   root.style.colorScheme = theme;
 }
 
-function getPreferredTheme() {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
 export function ThemeToggle({ className }) {
   const [theme, setTheme] = useState(() => {
     if (typeof window === "undefined") {
-      return "light";
+      return "dark";
     }
 
     try {
@@ -38,33 +32,7 @@ export function ThemeToggle({ className }) {
   });
 
   useEffect(() => {
-    let storedTheme = null;
-    try {
-      storedTheme = window.localStorage.getItem(STORAGE_KEY);
-    } catch (error) {}
     applyTheme(theme);
-
-    if (storedTheme === "light" || storedTheme === "dark") {
-      return;
-    }
-
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = (event) => {
-      try {
-        if (window.localStorage.getItem(STORAGE_KEY)) {
-          return;
-        }
-      } catch (error) {
-        return;
-      }
-
-      const nextTheme = event.matches ? "dark" : "light";
-      setTheme(nextTheme);
-      applyTheme(nextTheme);
-    };
-
-    media.addEventListener("change", handleChange);
-    return () => media.removeEventListener("change", handleChange);
   }, [theme]);
 
   const toggleTheme = () => {
