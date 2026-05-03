@@ -21,18 +21,30 @@ export function TaskProvider({ children }) {
     try {
       const data = await api.list();
       setTasks(data.data || []);
+      localStorage.setItem('mineral_tasks', JSON.stringify(data.data || []));
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Load tasks on mount
+  // Load tasks on mount - use cached data first, then fetch fresh data
   useEffect(() => {
+    const cached = localStorage.getItem('mineral_tasks');
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        setTasks(parsed);
+      } catch {
+        // ignore parse errors
+      }
+    }
+
     const load = async () => {
       setLoading(true);
       try {
         const data = await api.list();
         setTasks(data.data || []);
+        localStorage.setItem('mineral_tasks', JSON.stringify(data.data || []));
       } finally {
         setLoading(false);
       }
@@ -62,12 +74,14 @@ export function TaskProvider({ children }) {
       const task = prev.find(t => t.id == taskId);
       if (!task) return prev;
       const updated = { ...task, status: newStatus, order: newOrder };
+      
       if (newStatus !== 'completed') {
         const inDest = others.filter(t => t.status === newStatus);
         const elsewhere = others.filter(t => t.status !== newStatus);
         inDest.splice(newOrder, 0, updated);
         return [...elsewhere, ...inDest];
       }
+      
       return [...others, updated];
     });
     await api.update(taskId, { status: newStatus });

@@ -32,6 +32,7 @@ import {
 } from "lucide-react";
 import { useState, useCallback } from "react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const PRIORITIES = [
   { value: "normal", label: "Normal", dot: "bg-muted-foreground/50" },
@@ -265,6 +266,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
     priority: task.priority || "normal",
     project: task.project || "",
   });
+  const [isSaving, setIsSaving] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const openEdit = useCallback(() => {
@@ -281,15 +283,20 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
     setView("detail");
   }, []);
 
-  const save = useCallback(() => {
+  const save = useCallback(async () => {
     if (!form.title.trim()) return;
-    onUpdate(task.id, {
-      title: form.title.trim(),
-      description: form.description,
-      priority: form.priority,
-      project: form.project,
-    });
-    setView("detail");
+    setIsSaving(true);
+    try {
+      await onUpdate(task.id, {
+        title: form.title.trim(),
+        description: form.description,
+        priority: form.priority,
+        project: form.project,
+      });
+      setView("detail");
+    } finally {
+      setIsSaving(false);
+    }
   }, [form, onUpdate, task.id]);
 
   const cancelEdit = useCallback(() => setView("detail"), []);
@@ -325,10 +332,17 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
       </Button>
       <Button
         onClick={save}
-        disabled={!form.title.trim()}
+        disabled={!form.title.trim() || isSaving}
         className="flex-1 h-11"
       >
-        Save Changes
+        {isSaving ? (
+          <>
+            <LoadingSpinner />
+            Saving
+          </>
+        ) : (
+          "Save Changes"
+        )}
       </Button>
     </>
   );
