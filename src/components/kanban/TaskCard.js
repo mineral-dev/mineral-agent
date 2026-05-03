@@ -44,17 +44,15 @@ const STATUS_LABELS = {
   ready_to_start: "Ready to start",
   in_progress: "In progress",
   in_review: "In review",
-  approved: "Approved",
   completed: "Completed",
 };
 
 const STATUS_PIN_STYLES = {
   not_started: "text-slate-400",
   ready_to_start: "text-blue-500",
-  in_progress: "text-amber-500",
-  in_review: "text-amber-500",
-  approved: "text-emerald-500",
-  completed: "text-emerald-700",
+  in_progress: "text-yellow-500",
+  in_review: "text-purple-500",
+  completed: "text-green-500",
 };
 
 function formatDateTime(value) {
@@ -356,13 +354,35 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
       showTimeWork={showTimeWork}
     />
   );
-  const detailButtons = (
-    <>
-      <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:justify-end">
-        <Button onClick={openEdit} className="h-11 gap-2 shadow-sm sm:px-5">
-          <Pencil className="w-4 h-4" />
-          Edit Task
-        </Button>
+  // Mobile Sheet buttons: Edit Task, Delete, Close (vertical stack)
+  const detailButtonsMobile = (
+    <div className="flex flex-col gap-2">
+      <Button onClick={openEdit} className="h-11 gap-2 shadow-sm">
+        <Pencil className="w-4 h-4" />
+        Edit Task
+      </Button>
+      <Button
+        variant="outline"
+        onClick={deleteTask}
+        className="h-11 gap-2 border-destructive/20 text-destructive hover:bg-destructive/10 hover:text-destructive"
+      >
+        <Trash2 className="w-4 h-4" />
+        Delete
+      </Button>
+      <Button
+        variant="ghost"
+        onClick={closeDetail}
+        className="h-11 px-4 text-muted-foreground hover:text-foreground"
+      >
+        Close
+      </Button>
+    </div>
+  );
+
+  // Desktop Dialog buttons: Delete, Edit Task, Close (horizontal row)
+  const detailButtonsDesktop = (
+    <div className="flex flex-1 items-center gap-3">
+      <div className="flex gap-2">
         <Button
           variant="outline"
           onClick={deleteTask}
@@ -370,6 +390,10 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
         >
           <Trash2 className="w-4 h-4" />
           Delete
+        </Button>
+        <Button onClick={openEdit} className="h-11 gap-2 shadow-sm sm:px-5">
+          <Pencil className="w-4 h-4" />
+          Edit Task
         </Button>
       </div>
       <Button
@@ -379,7 +403,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
       >
         Close
       </Button>
-    </>
+    </div>
   );
 
   return (
@@ -396,7 +420,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
               </DialogHeader>
               {detailContent}
               <DialogFooter className="flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
-                {detailButtons}
+                {detailButtonsDesktop}
               </DialogFooter>
             </div>
           </DialogContent>
@@ -412,7 +436,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
                 <SheetTitle className="text-lg">Task Detail</SheetTitle>
               </SheetHeader>
               <div className="px-4">{detailContent}</div>
-              <SheetFooter className="gap-3 pt-4">{detailButtons}</SheetFooter>
+              <SheetFooter className="flex-col gap-3 pt-4">{detailButtonsMobile}</SheetFooter>
             </div>
           </SheetContent>
         </Sheet>

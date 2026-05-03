@@ -13,7 +13,6 @@ export function TaskProvider({ children }) {
     { id: 'ready_to_start', label: 'Ready to Start', dotColor: 'bg-blue-500',    borderColor: 'border-l-blue-500'    },
     { id: 'in_progress',    label: 'In Progress',    dotColor: 'bg-amber-500',   borderColor: 'border-l-amber-500'   },
     { id: 'in_review',      label: 'In Review',      dotColor: 'bg-purple-500',  borderColor: 'border-l-purple-500'  },
-    { id: 'approved',       label: 'Approved',       dotColor: 'bg-sky-500',     borderColor: 'border-l-sky-500'     },
     { id: 'completed',      label: 'Completed',      dotColor: 'bg-emerald-600', borderColor: 'border-l-emerald-600' },
   ];
 
@@ -75,10 +74,15 @@ export function TaskProvider({ children }) {
       const task = prev.find(t => t.id == taskId);
       if (!task) return prev;
       const updated = { ...task, status: newStatus, order: newOrder };
-      const inDest = others.filter(t => t.status === newStatus);
-      const elsewhere = others.filter(t => t.status !== newStatus);
-      inDest.splice(newOrder, 0, updated);
-      return [...elsewhere, ...inDest];
+      
+      if (newStatus !== 'completed') {
+        const inDest = others.filter(t => t.status === newStatus);
+        const elsewhere = others.filter(t => t.status !== newStatus);
+        inDest.splice(newOrder, 0, updated);
+        return [...elsewhere, ...inDest];
+      }
+      
+      return [...others, updated];
     });
     await api.update(taskId, { status: newStatus });
   }, []);
