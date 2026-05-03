@@ -32,10 +32,12 @@ import {
 } from "lucide-react";
 import { useState, useCallback } from "react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const PRIORITIES = [
-  { value: "normal", label: "Normal", dot: "bg-muted-foreground/50" },
   { value: "high", label: "High", dot: "bg-red-500" },
+  { value: "normal", label: "Normal", dot: "bg-muted-foreground/50" },
+  { value: "low", label: "Low", dot: "bg-blue-400" },
 ];
 
 const STATUS_LABELS = {
@@ -43,17 +45,15 @@ const STATUS_LABELS = {
   ready_to_start: "Ready to start",
   in_progress: "In progress",
   in_review: "In review",
-  approved: "Approved",
   completed: "Completed",
 };
 
 const STATUS_PIN_STYLES = {
   not_started: "text-slate-400",
   ready_to_start: "text-blue-500",
-  in_progress: "text-amber-500",
-  in_review: "text-amber-500",
-  approved: "text-emerald-500",
-  completed: "text-emerald-700",
+  in_progress: "text-yellow-500",
+  in_review: "text-purple-500",
+  completed: "text-green-500",
 };
 
 function formatDateTime(value) {
@@ -142,7 +142,9 @@ function EditFormInner({ form, setForm, onSubmit }) {
                     active
                       ? p.value === "high"
                         ? "bg-red-500 text-white border-red-500"
-                        : "bg-foreground text-background"
+                        : p.value === "low"
+                          ? "bg-blue-500 text-white border-blue-500"
+                          : "bg-foreground text-background"
                       : "bg-background text-muted-foreground hover:bg-muted/40"
                   }`}
               >
@@ -194,11 +196,13 @@ function TaskDetailInner({ task, formatTime, projectLabel, showTimeWork }) {
               ${
                 task.priority === "high"
                   ? "border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400"
+                  : task.priority === "low"
+                  ? "border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400"
                   : "border-border/60 bg-muted/50 text-muted-foreground"
               }`}
           >
             {task.priority === "high" ? <Zap className="h-3 w-3" /> : null}
-            {task.priority === "high" ? "High priority" : "Normal priority"}
+            {task.priority === "high" ? "High priority" : task.priority === "low" ? "Low priority" : "Normal priority"}
           </span>
           <Badge variant="outline" className="rounded-full px-3 py-1">
             {STATUS_LABELS[task.status] || task.status}
@@ -216,7 +220,7 @@ function TaskDetailInner({ task, formatTime, projectLabel, showTimeWork }) {
           Description
         </div>
         <p className="mt-2 whitespace-pre-line text-sm leading-6 text-foreground/90">
-          {task.description || "No description added."}
+          {task.description || "No description"}
         </p>
       </div>
 
@@ -267,6 +271,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
     priority: task.priority || "normal",
     project: task.project || "",
   });
+  const [isSaving, setIsSaving] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const openEdit = useCallback(() => {
@@ -283,15 +288,20 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
     setView("detail");
   }, []);
 
-  const save = useCallback(() => {
+  const save = useCallback(async () => {
     if (!form.title.trim()) return;
-    onUpdate(task.id, {
-      title: form.title.trim(),
-      description: form.description,
-      priority: form.priority,
-      project: form.project,
-    });
-    setView("detail");
+    setIsSaving(true);
+    try {
+      await onUpdate(task.id, {
+        title: form.title.trim(),
+        description: form.description,
+        priority: form.priority,
+        project: form.project,
+      });
+      setView("detail");
+    } finally {
+      setIsSaving(false);
+    }
   }, [form, onUpdate, task.id]);
 
   const cancelEdit = useCallback(() => setView("detail"), []);
@@ -327,10 +337,17 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
       </Button>
       <Button
         onClick={save}
-        disabled={!form.title.trim()}
+        disabled={!form.title.trim() || isSaving}
         className="flex-1 h-11"
       >
-        Save Changes
+        {isSaving ? (
+          <>
+            <LoadingSpinner />
+            Saving
+          </>
+        ) : (
+          "Save Changes"
+        )}
       </Button>
     </>
   );
@@ -342,13 +359,35 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
       showTimeWork={showTimeWork}
     />
   );
-  const detailButtons = (
-    <>
-      <div className="flex flex-1 flex-col gap-2 sm:flex-row sm:justify-end">
-        <Button onClick={openEdit} className="h-11 gap-2 shadow-sm sm:px-5">
-          <Pencil className="w-4 h-4" />
-          Edit Task
-        </Button>
+  // Mobile Sheet buttons: Edit Task, Delete, Close (vertical stack)
+  const detailButtonsMobile = (
+    <div className="flex flex-col gap-2">
+      <Button onClick={openEdit} className="h-11 gap-2 shadow-sm">
+        <Pencil className="w-4 h-4" />
+        Edit Task
+      </Button>
+      <Button
+        variant="outline"
+        onClick={deleteTask}
+        className="h-11 gap-2 border-destructive/20 text-destructive hover:bg-destructive/10 hover:text-destructive"
+      >
+        <Trash2 className="w-4 h-4" />
+        Delete
+      </Button>
+      <Button
+        variant="ghost"
+        onClick={closeDetail}
+        className="h-11 px-4 text-muted-foreground hover:text-foreground"
+      >
+        Close
+      </Button>
+    </div>
+  );
+
+  // Desktop Dialog buttons: Delete, Edit Task, Close (horizontal row)
+  const detailButtonsDesktop = (
+    <div className="flex flex-1 items-center gap-3">
+      <div className="flex gap-2">
         <Button
           variant="outline"
           onClick={deleteTask}
@@ -356,6 +395,10 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
         >
           <Trash2 className="w-4 h-4" />
           Delete
+        </Button>
+        <Button onClick={openEdit} className="h-11 gap-2 shadow-sm sm:px-5">
+          <Pencil className="w-4 h-4" />
+          Edit Task
         </Button>
       </div>
       <Button
@@ -365,7 +408,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
       >
         Close
       </Button>
-    </>
+    </div>
   );
 
   return (
@@ -382,7 +425,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
               </DialogHeader>
               {detailContent}
               <DialogFooter className="flex-col items-stretch gap-3 pt-2 sm:flex-row sm:items-center sm:justify-between">
-                {detailButtons}
+                {detailButtonsDesktop}
               </DialogFooter>
             </div>
           </DialogContent>
@@ -398,7 +441,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
                 <SheetTitle className="text-lg">Task Detail</SheetTitle>
               </SheetHeader>
               <div className="px-4">{detailContent}</div>
-              <SheetFooter className="gap-3 pt-4">{detailButtons}</SheetFooter>
+              <SheetFooter className="flex-col gap-3 pt-4">{detailButtonsMobile}</SheetFooter>
             </div>
           </SheetContent>
         </Sheet>
@@ -502,6 +545,12 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
                 <div className="inline-flex items-center gap-0.5 rounded-md bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-600 dark:bg-orange-950/40 dark:text-orange-400">
                   <Zap className="h-2.5 w-2.5" />
                   High
+                </div>
+              )}
+              {task.priority === "low" && (
+                <div className="inline-flex items-center gap-0.5 rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  Low
                 </div>
               )}
               {task.prUrl && task.status === "in_review" && (

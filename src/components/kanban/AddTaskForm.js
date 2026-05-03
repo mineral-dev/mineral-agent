@@ -22,6 +22,7 @@ import {
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Plus, X, Zap } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const defaultForm = {
   title: "",
@@ -31,8 +32,9 @@ const defaultForm = {
 };
 
 const PRIORITIES = [
-  { value: "normal", label: "Normal", dot: "bg-muted-foreground/50" },
   { value: "high", label: "High", dot: "bg-red-500" },
+  { value: "normal", label: "Normal", dot: "bg-muted-foreground/50" },
+  { value: "low", label: "Low", dot: "bg-blue-400" },
 ];
 
 function TaskFormInner({ form, setForm, onSubmit, error }) {
@@ -93,7 +95,9 @@ function TaskFormInner({ form, setForm, onSubmit, error }) {
                     active
                       ? p.value === "high"
                         ? "bg-red-500 text-white border-red-500"
-                        : "bg-foreground text-background"
+                        : p.value === "low"
+                          ? "bg-blue-500 text-white border-blue-500"
+                          : "bg-foreground text-background"
                       : "bg-background text-muted-foreground hover:bg-muted/40"
                   }`}
               >
@@ -195,7 +199,7 @@ export function AddTaskForm({ open, onOpenChange, onAdd }) {
           <DialogHeader>
             <DialogTitle className="text-lg">Create New Task</DialogTitle>
             <DialogDescription className="text-sm">
-              Fill in the details below and set a priority.
+              Add a task for the AI agent to work on. Set a title and optional description, then choose a priority.
             </DialogDescription>
           </DialogHeader>
           <TaskFormInner
@@ -225,7 +229,7 @@ export function AddTaskForm({ open, onOpenChange, onAdd }) {
             <SheetTitle className="text-lg">New Task</SheetTitle>
           </div>
           <SheetDescription className="text-sm">
-            Fill in the details below and set a priority.
+            Add a task for the AI agent to work on. Set a title and optional description, then choose a priority.
           </SheetDescription>
         </SheetHeader>
         <div className="px-4">

@@ -1,82 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 import { Moon, SunMedium } from "lucide-react";
-
 import { cn } from "@/lib/utils";
 
-const STORAGE_KEY = "mineral-theme";
-
-function applyTheme(theme) {
-  const root = document.documentElement;
-  root.classList.toggle("dark", theme === "dark");
-  root.style.colorScheme = theme;
-}
-
-function getPreferredTheme() {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
 export function ThemeToggle({ className }) {
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === "undefined") {
-      return "light";
-    }
-
-    try {
-      const storedTheme = window.localStorage.getItem(STORAGE_KEY);
-      if (storedTheme === "light" || storedTheme === "dark") {
-        return storedTheme;
-      }
-    } catch (error) {}
-
-    return document.documentElement.classList.contains("dark")
-      ? "dark"
-      : "light";
-  });
-
-  useEffect(() => {
-    let storedTheme = null;
-    try {
-      storedTheme = window.localStorage.getItem(STORAGE_KEY);
-    } catch (error) {}
-    applyTheme(theme);
-
-    if (storedTheme === "light" || storedTheme === "dark") {
-      return;
-    }
-
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = (event) => {
-      try {
-        if (window.localStorage.getItem(STORAGE_KEY)) {
-          return;
-        }
-      } catch (error) {
-        return;
-      }
-
-      const nextTheme = event.matches ? "dark" : "light";
-      setTheme(nextTheme);
-      applyTheme(nextTheme);
-    };
-
-    media.addEventListener("change", handleChange);
-    return () => media.removeEventListener("change", handleChange);
-  }, [theme]);
-
-  const toggleTheme = () => {
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, nextTheme);
-    } catch (error) {}
-    applyTheme(nextTheme);
-  };
-
-  const isDark = theme === "dark";
+  const { resolvedTheme, setTheme } = useTheme();
+  const isDark = resolvedTheme === "dark";
 
   return (
     <button
@@ -85,7 +15,7 @@ export function ThemeToggle({ className }) {
       aria-checked={isDark}
       aria-label={`Switch to ${isDark ? "light" : "dark"} mode`}
       title={`Switch to ${isDark ? "light" : "dark"} mode`}
-      onClick={toggleTheme}
+      onClick={() => setTheme(isDark ? "light" : "dark")}
       className={cn(
         "group relative inline-flex h-8 w-14 shrink-0 items-center rounded-full border border-border/70 bg-muted/80 p-1 transition-colors duration-300 ease-out hover:bg-muted focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/50 dark:bg-muted/40",
         "data-[checked=true]:bg-foreground/15",

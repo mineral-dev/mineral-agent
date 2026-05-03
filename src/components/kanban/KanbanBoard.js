@@ -6,10 +6,14 @@ import { TaskColumn } from "./TaskColumn";
 export function KanbanBoard() {
   const { tasks, COLUMNS, updateTask, deleteTask, moveTask } = useTasks();
 
-  const byColumn = (colId) =>
-    tasks
+  const byColumn = (colId) => {
+    const filtered = tasks
       .filter((t) => t.status === colId)
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+    // Cap completed column at 25 tasks, sorted newest first
+    if (colId === 'completed') return filtered.slice(-25).sort((a, b) => b.id - a.id);
+    return filtered;
+  };
 
   const onDragEnd = async (result) => {
     const { source, destination, draggableId } = result;
@@ -19,6 +23,11 @@ export function KanbanBoard() {
       source.index === destination.index
     )
       return;
+    const task = tasks.find((t) => String(t.id) === String(draggableId));
+    if (task) {
+      if (task.status === 'in_progress') return;
+      if (task.status === 'not_started' && destination.droppableId !== 'ready_to_start') return;
+    }
     await moveTask(draggableId, destination.droppableId, destination.index);
   };
 
