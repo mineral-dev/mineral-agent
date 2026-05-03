@@ -3,6 +3,7 @@ import { createContext, useContext, useState, useCallback, useEffect } from 'rea
 import { api } from '@/lib/api';
 
 const TaskContext = createContext(null);
+const CACHE_KEY = 'mineral-agent-tasks-cache';
 
 export function TaskProvider({ children }) {
   const [tasks, setTasks] = useState([]);
@@ -17,28 +18,40 @@ export function TaskProvider({ children }) {
     { id: 'completed',      label: 'Completed',      dotColor: 'bg-emerald-600', borderColor: 'border-l-emerald-600' },
   ];
 
+  const saveCache = (data) => {
+    try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch {}
+  };
+
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
       const data = await api.list();
-      setTasks(data.data || []);
+      const fresh = data.data || [];
+      setTasks(fresh);
+      saveCache(fresh);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Load tasks on mount
+  // Load tasks on mount — show cached data immediately, then refresh in background
   useEffect(() => {
-    const load = async () => {
-      setLoading(true);
-      try {
-        const data = await api.list();
-        setTasks(data.data || []);
-      } finally {
-        setLoading(false);
+    let hasCached = false;
+    try {
+      const cached = localStorage.getItem(CACHE_KEY);
+      if (cached) {
+        setTasks(JSON.parse(cached));
+        hasCached = true;
       }
-    };
-    load();
+    } catch {}
+
+    if (!hasCached) setLoading(true);
+
+    api.list().then((data) => {
+      const fresh = data.data || [];
+      setTasks(fresh);
+      saveCache(fresh);
+    }).finally(() => setLoading(false));
   }, []);
 
   const addTask = useCallback(async (taskData) => {

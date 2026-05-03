@@ -154,3 +154,8 @@
   0%, 100% { opacity: 0.15; transform: scale(0.5) rotate(45deg); }
   50% { opacity: 1; transform: scale(1.1) rotate(45deg); }
 }
+
+@keyframes dot-bounce {
+  0%, 100% { opacity: 0.25; transform: translateY(0); }
+  50% { opacity: 1; transform: translateY(-3px); }
+}

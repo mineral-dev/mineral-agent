@@ -3,15 +3,25 @@ import { useState } from "react";
 import { TaskProvider, useTasks } from "@/context/TaskContext";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { AddTaskForm } from "@/components/kanban/AddTaskForm";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Plus } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 function Board() {
-  const { addTask } = useTasks();
+  const { addTask, loading, tasks } = useTasks();
   const [dialogOpen, setDialogOpen] = useState(false);
   const isDesktop = useMediaQuery("(min-width: 768px)");
+  const isInitialLoading = loading && tasks.length === 0;
+
+  if (isInitialLoading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <LoadingSpinner size="lg" className="text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex min-h-screen flex-col bg-background text-foreground transition-colors duration-300">
