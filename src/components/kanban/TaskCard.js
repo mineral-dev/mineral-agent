@@ -425,6 +425,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
         <Sheet
           open={view === "edit"}
           onOpenChange={(open) => !open && cancelEdit()}
+          initialFocus={null}
         >
           <SheetContent side="bottom" className="rounded-t-2xl p-0 gap-0">
             <div className="max-h-[85svh] overflow-y-auto pb-6 pt-4">
