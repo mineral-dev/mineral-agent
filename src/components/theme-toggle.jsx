@@ -13,22 +13,10 @@ function applyTheme(theme) {
   root.style.colorScheme = theme;
 }
 
-function setThemeCookie(theme) {
-  // Set cookie with 1 year expiry, path=/, sameSite=lax
-  const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
-  document.cookie = `mineral-theme=${theme}; expires=${expires}; path=/; SameSite=Lax`;
-}
-
-function getPreferredTheme() {
-  return window.matchMedia("(prefers-color-scheme: dark)").matches
-    ? "dark"
-    : "light";
-}
-
 export function ThemeToggle({ className }) {
   const [theme, setTheme] = useState(() => {
     if (typeof window === "undefined") {
-      return "light";
+      return "dark";
     }
 
     try {
@@ -44,35 +32,7 @@ export function ThemeToggle({ className }) {
   });
 
   useEffect(() => {
-    let storedTheme = null;
-    try {
-      storedTheme = window.localStorage.getItem(STORAGE_KEY);
-    } catch (error) {}
     applyTheme(theme);
-
-    // Set cookie if we have a stored theme
-    if (storedTheme === "light" || storedTheme === "dark") {
-      setThemeCookie(storedTheme);
-      return;
-    }
-
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const handleChange = (event) => {
-      try {
-        if (window.localStorage.getItem(STORAGE_KEY)) {
-          return;
-        }
-      } catch (error) {
-        return;
-      }
-
-      const nextTheme = event.matches ? "dark" : "light";
-      setTheme(nextTheme);
-      applyTheme(nextTheme);
-    };
-
-    media.addEventListener("change", handleChange);
-    return () => media.removeEventListener("change", handleChange);
   }, [theme]);
 
   const toggleTheme = () => {
@@ -80,7 +40,6 @@ export function ThemeToggle({ className }) {
     setTheme(nextTheme);
     try {
       window.localStorage.setItem(STORAGE_KEY, nextTheme);
-      setThemeCookie(nextTheme);
     } catch (error) {}
     applyTheme(nextTheme);
   };
