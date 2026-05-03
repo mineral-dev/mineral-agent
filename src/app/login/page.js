@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Eye, EyeOff, Lock } from "lucide-react";
 
 export default function LoginPage() {
@@ -34,7 +34,6 @@ export default function LoginPage() {
         return;
       }
 
-      // Redirect to home or intended destination
       const redirect = new URLSearchParams(window.location.search).get("redirect");
       router.push(redirect || "/");
       router.refresh();
@@ -46,25 +45,22 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-background px-4 transition-colors duration-300">
-      {/* Background decorative elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <div className="absolute top-1/4 -left-16 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 -right-16 w-72 h-72 bg-primary/5 rounded-full blur-3xl" />
       </div>
 
       <div className="relative w-full max-w-sm">
-        {/* Logo / Header */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-primary/10 dark:bg-primary/20 mb-4">
             <Lock className="w-8 h-8 text-primary" />
           </div>
-          <h1 className="text-2xl font-semibold text-foreground">Welcome Back</h1>
+          <h1 className="text-2xl font-semibold text-foreground">Sign in</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            Enter your password to continue
+            Use the dashboard password to continue
           </p>
         </div>
 
-        {/* Login Card */}
         <div className="bg-card border border-border/80 rounded-2xl p-6 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
@@ -114,7 +110,7 @@ export default function LoginPage() {
               {loading ? (
                 <span className="flex items-center gap-2">
                   <LoadingSpinner size="sm" />
-                  Signing in...
+                  Signing in
                 </span>
               ) : (
                 "Sign In"
@@ -124,7 +120,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-xs text-muted-foreground text-center mt-6">
-          Mineral Agent — Kanban Board
+          Mineral Agent task board
         </p>
       </div>
     </div>

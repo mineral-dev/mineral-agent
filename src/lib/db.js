@@ -1,7 +1,51 @@
 import pg from 'pg';
+import {
+  TASK_STATUSES,
+  normalizeStatus,
+  normalizeTaskRecord,
+  normalizeTaskValue,
+} from './tasks';
+
 const { Pool } = pg;
 
+const TASK_SELECT = `
+  SELECT
+    id,
+    title,
+    description,
+    priority,
+    project,
+    status,
+    task_order,
+    COALESCE(estimated_work, total_work) AS estimated_work,
+    total_work,
+    pr_url,
+    completed_at::text AS completed_at,
+    back_to_ready_reason,
+    back_to_ready_note,
+    created_at::text AS created_at,
+    updated_at::text AS updated_at
+  FROM tasks
+`;
+
+const TASK_ORDER_BY = `
+  ORDER BY
+    CASE status
+      WHEN 'not_started' THEN 0
+      WHEN 'ready_to_start' THEN 1
+      WHEN 'in_progress' THEN 2
+      WHEN 'in_review' THEN 3
+      WHEN 'completed' THEN 4
+      ELSE 5
+    END,
+    task_order ASC,
+    id ASC
+`;
+
+const TASK_STATUS_SET = new Set(TASK_STATUSES);
+
 let pool;
+let schemaInitialized = false;
 
 function getPool() {
   if (!pool) {
@@ -17,249 +61,542 @@ function getPool() {
 async function query(sql, params) {
   const client = await getPool().connect();
   try {
-    const result = await client.query(sql, params);
-    return result;
+    return await client.query(sql, params);
   } finally {
     client.release();
   }
 }
 
-// Initialize schema (called once on first request)
-async function initSchema() {
-  await query(`
+async function withClient(fn) {
+  const client = await getPool().connect();
+  try {
+    return await fn(client);
+  } finally {
+    client.release();
+  }
+}
+
+function normalizeNullableText(value) {
+  if (typeof value !== 'string') return null;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : null;
+}
+
+function normalizeBackToReadyReason(value) {
+  if (value == null) return null;
+  const normalized = String(value);
+  return ['conflict_when_merge_to_main', 'manual_review_failed', 'other'].includes(normalized)
+    ? normalized
+    : null;
+}
+
+async function initSchema(client) {
+  await client.query(`
     CREATE TABLE IF NOT EXISTS tasks (
-      id          SERIAL PRIMARY KEY,
-      title       TEXT    NOT NULL,
-      description TEXT,
-      priority    TEXT    NOT NULL DEFAULT 'normal',
-      project     TEXT,
-      status      TEXT    NOT NULL DEFAULT 'not_started',
-      task_order  INTEGER NOT NULL DEFAULT 0,
-      total_work  INTEGER,
-      estimated_work INTEGER,
-      pr_url      TEXT,
-      completed_at TIMESTAMPTZ,
-      created_at  TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-      updated_at  TIMESTAMPTZ NOT NULL DEFAULT NOW()
+      id              SERIAL PRIMARY KEY,
+      title           TEXT NOT NULL,
+      description     TEXT,
+      priority        TEXT NOT NULL DEFAULT 'normal',
+      project         TEXT,
+      status          TEXT NOT NULL DEFAULT 'not_started',
+      task_order      INTEGER NOT NULL DEFAULT 0,
+      total_work      INTEGER,
+      estimated_work  INTEGER,
+      pr_url          TEXT,
+      completed_at    TIMESTAMPTZ,
+      back_to_ready_reason TEXT,
+      back_to_ready_note   TEXT,
+      created_at      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at      TIMESTAMPTZ NOT NULL DEFAULT NOW()
     )
   `);
-  await query(`
-    ALTER TABLE tasks ADD COLUMN IF NOT EXISTS estimated_work INTEGER
+
+  await client.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS total_work INTEGER`);
+  await client.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS estimated_work INTEGER`);
+  await client.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS pr_url TEXT`);
+  await client.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ`);
+  await client.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS back_to_ready_reason TEXT`);
+  await client.query(`ALTER TABLE tasks ADD COLUMN IF NOT EXISTS back_to_ready_note TEXT`);
+  await client.query(`
+    ALTER TABLE tasks ADD COLUMN IF NOT EXISTS task_order INTEGER NOT NULL DEFAULT 0
   `);
-  await query(`
-    ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ
-  `);
-  await query(`
-    ALTER TABLE tasks ADD COLUMN IF NOT EXISTS back_to_ready_reason TEXT
-      CHECK (back_to_ready_reason IN (
-        'conflict_when_merge_to_main',
-        'manual_review_failed',
-        'other'
-      ))
-  `);
-  await query(`
-    ALTER TABLE tasks ADD COLUMN IF NOT EXISTS back_to_ready_note TEXT
-  `);
-  await query(`
+
+  await client.query(`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
     )
   `);
-  // Initialize default password if not exists
-  await query(`
+
+  await client.query(`
     INSERT INTO settings (key, value)
     VALUES ('password', 'admin1')
     ON CONFLICT (key) DO NOTHING
   `);
 }
 
-// Ensure schema exists
-let schemaInitialized = false;
+async function backfillLegacyRows(client) {
+  await client.query(`
+    UPDATE tasks
+    SET status = 'completed',
+        completed_at = COALESCE(completed_at, updated_at, NOW())
+    WHERE status = 'approved'
+  `);
+
+  await client.query(`
+    UPDATE tasks
+    SET status = 'not_started'
+    WHERE status IS NULL
+       OR status NOT IN ('not_started', 'ready_to_start', 'in_progress', 'in_review', 'completed')
+  `);
+
+  await client.query(`
+    UPDATE tasks
+    SET estimated_work = total_work
+    WHERE estimated_work IS NULL AND total_work IS NOT NULL
+  `);
+
+  await client.query(`
+    UPDATE tasks
+    SET completed_at = COALESCE(completed_at, updated_at, NOW())
+    WHERE status = 'completed' AND completed_at IS NULL
+  `);
+
+  await client.query(`
+    UPDATE tasks
+    SET task_order = 0
+    WHERE task_order IS NULL
+  `);
+}
+
 async function ensureSchema() {
-  if (!schemaInitialized) {
-    await initSchema();
-    schemaInitialized = true;
+  if (schemaInitialized) return;
+  await withClient(async (client) => {
+    await client.query('BEGIN');
+    try {
+      await initSchema(client);
+      await backfillLegacyRows(client);
+      await client.query('COMMIT');
+      schemaInitialized = true;
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    }
+  });
+}
+
+function normalizeTaskInput(data = {}) {
+  const estimatedWork = normalizeTaskValue(data.estimatedWork ?? data.totalWork);
+  return {
+    title: typeof data.title === 'string' ? data.title.trim() : '',
+    description: normalizeNullableText(data.description),
+    priority: typeof data.priority === 'string' && data.priority.trim()
+      ? data.priority.trim()
+      : 'normal',
+    project: normalizeNullableText(data.project),
+    status: normalizeStatus(data.status),
+    order: normalizeTaskValue(data.order),
+    estimatedWork,
+    totalWork: estimatedWork,
+    prUrl: normalizeNullableText(data.prUrl),
+    completedAt: data.completedAt === undefined ? undefined : normalizeNullableText(data.completedAt),
+    backToReadyReason: normalizeBackToReadyReason(data.backToReadyReason),
+    backToReadyNote: normalizeNullableText(data.backToReadyNote),
+  };
+}
+
+function isCompleted(status) {
+  return status === 'completed';
+}
+
+function toClientTask(row) {
+  return normalizeTaskRecord(row);
+}
+
+async function fetchTasks(client, where = '', params = []) {
+  const result = await client.query(`
+    ${TASK_SELECT}
+    ${where}
+    ${TASK_ORDER_BY}
+  `, params);
+  return result.rows.map(toClientTask);
+}
+
+async function fetchTaskById(client, id) {
+  const result = await client.query(
+    `
+      ${TASK_SELECT}
+      WHERE id = $1
+      LIMIT 1
+    `,
+    [Number(id)]
+  );
+  return result.rows[0] ? toClientTask(result.rows[0]) : null;
+}
+
+async function reindexTasks(client, tasks, status) {
+  for (let index = 0; index < tasks.length; index += 1) {
+    const task = tasks[index];
+    await client.query(
+      `
+        UPDATE tasks
+        SET status = $1,
+            task_order = $2,
+            updated_at = NOW()
+        WHERE id = $3
+      `,
+      [status, index, task.id]
+    );
   }
+}
+
+async function loadOrderedTasksForStatus(client, status) {
+  const result = await client.query(
+    `
+      ${TASK_SELECT}
+      WHERE status = $1
+      ORDER BY task_order ASC, id ASC
+      FOR UPDATE
+    `,
+    [status]
+  );
+  return result.rows.map(toClientTask);
 }
 
 export async function getAll() {
   await ensureSchema();
-  const result = await query(
-    'SELECT id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, back_to_ready_reason, back_to_ready_note, created_at::text, updated_at::text FROM tasks ORDER BY task_order ASC'
-  );
-  return result.rows.map(row => ({
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    priority: row.priority,
-    project: row.project,
-    status: row.status,
-    order: row.task_order,
-    totalWork: row.total_work,
-    estimatedWork: row.estimated_work,
-    prUrl: row.pr_url,
-    completedAt: row.completed_at,
-    backToReadyReason: row.back_to_ready_reason,
-    backToReadyNote: row.back_to_ready_note,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  }));
+  return withClient((client) => fetchTasks(client));
 }
 
 export async function getById(id) {
   await ensureSchema();
-  const result = await query(
-    'SELECT id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, back_to_ready_reason, back_to_ready_note, created_at::text, updated_at::text FROM tasks WHERE id = $1',
-    [Number(id)]
-  );
-  if (result.rows.length === 0) return null;
-  const row = result.rows[0];
-  return {
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    priority: row.priority,
-    project: row.project,
-    status: row.status,
-    order: row.task_order,
-    totalWork: row.total_work,
-    estimatedWork: row.estimated_work,
-    prUrl: row.pr_url,
-    completedAt: row.completed_at,
-    backToReadyReason: row.back_to_ready_reason,
-    backToReadyNote: row.back_to_ready_note,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
+  return withClient((client) => fetchTaskById(client, id));
 }
 
 export async function create(data) {
   await ensureSchema();
-  const title = typeof data.title === 'string' ? data.title.trim() : '';
-  if (!title) throw new Error('Task title is required');
+  const payload = normalizeTaskInput(data);
+  if (!payload.title) throw new Error('Task title is required');
 
-  const description = typeof data.description === 'string' && data.description.trim()
-    ? data.description.trim() : null;
-  const priority = data.priority || 'normal';
-  const project = typeof data.project === 'string' && data.project.trim()
-    ? data.project.trim() : null;
-  const status = data.status || 'not_started';
-  const order = typeof data.order === 'number' ? data.order : 0;
-  const totalWork = typeof data.totalWork === 'number' ? data.totalWork : null;
-  const estimatedWork = typeof data.estimatedWork === 'number' ? data.estimatedWork : null;
-  const completedAt = data.completedAt !== undefined
-    ? data.completedAt
-    : (status === 'completed' ? new Date().toISOString() : null);
-  const backToReadyReason = data.backToReadyReason ?? null;
-  const backToReadyNote = data.backToReadyNote ?? null;
-
-  const result = await query(
-    `INSERT INTO tasks (title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at, back_to_ready_reason, back_to_ready_note)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
-     RETURNING id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, back_to_ready_reason, back_to_ready_note, created_at::text, updated_at::text`,
-    [title, description, priority, project, status, order, totalWork, estimatedWork, null, completedAt, backToReadyReason, backToReadyNote]
-  );
-  const row = result.rows[0];
-  return {
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    priority: row.priority,
-    project: row.project,
-    status: row.status,
-    order: row.task_order,
-    totalWork: row.total_work,
-    estimatedWork: row.estimated_work,
-    prUrl: row.pr_url,
-    completedAt: row.completed_at,
-    backToReadyReason: row.back_to_ready_reason,
-    backToReadyNote: row.back_to_ready_note,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
+  return withClient(async (client) => {
+    await client.query('BEGIN');
+    try {
+      const nextOrderResult = await client.query(
+        `
+          SELECT COALESCE(MAX(task_order), -1) + 1 AS next_order
+          FROM tasks
+          WHERE status = $1
+        `,
+        [payload.status]
+      );
+      const nextOrder = payload.order != null ? payload.order : nextOrderResult.rows[0].next_order;
+      const completedAt = payload.completedAt !== undefined
+        ? payload.completedAt
+        : (isCompleted(payload.status) ? new Date().toISOString() : null);
+      const result = await client.query(
+        `
+          INSERT INTO tasks (
+            title,
+            description,
+            priority,
+            project,
+            status,
+            task_order,
+            total_work,
+            estimated_work,
+            pr_url,
+            completed_at,
+            back_to_ready_reason,
+            back_to_ready_note
+          )
+          VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+          RETURNING
+            id,
+            title,
+            description,
+            priority,
+            project,
+            status,
+            task_order,
+            total_work,
+            estimated_work,
+            pr_url,
+            completed_at::text AS completed_at,
+            back_to_ready_reason,
+            back_to_ready_note,
+            created_at::text AS created_at,
+            updated_at::text AS updated_at
+        `,
+        [
+          payload.title,
+          payload.description,
+          payload.priority,
+          payload.project,
+          payload.status,
+          nextOrder,
+          payload.totalWork,
+          payload.estimatedWork,
+          payload.prUrl,
+          completedAt,
+          payload.backToReadyReason,
+          payload.backToReadyNote,
+        ]
+      );
+      await client.query('COMMIT');
+      return toClientTask(result.rows[0]);
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    }
+  });
 }
 
 export async function update(id, data) {
   await ensureSchema();
-  const existing = await getById(id);
-  if (!existing) throw new Error('Task not found');
+  const payload = normalizeTaskInput(data);
 
-  const title = typeof data.title === 'string' ? data.title.trim() : existing.title;
-  const description = data.description !== undefined
-    ? (typeof data.description === 'string' && data.description.trim() ? data.description.trim() : null)
-    : existing.description;
-  const priority = data.priority || existing.priority;
-  const project = data.project !== undefined
-    ? (typeof data.project === 'string' && data.project.trim() ? data.project.trim() : null)
-    : existing.project;
-  const status = data.status || existing.status;
-  const order = data.order !== undefined ? data.order : existing.order;
-  const totalWork = data.totalWork !== undefined ? data.totalWork : existing.totalWork;
-  const estimatedWork = data.estimatedWork !== undefined ? data.estimatedWork : existing.estimatedWork;
-  const prUrl = data.prUrl !== undefined ? data.prUrl : existing.prUrl;
-  const completedAt = data.completedAt !== undefined
-    ? data.completedAt
-    : (status === 'completed'
-      ? (existing.completedAt || new Date().toISOString())
-      : existing.completedAt);
-  const backToReadyReason = data.backToReadyReason !== undefined ? data.backToReadyReason : existing.backToReadyReason;
-  const backToReadyNote = data.backToReadyNote !== undefined ? data.backToReadyNote : existing.backToReadyNote;
+  return withClient(async (client) => {
+    const existing = await fetchTaskById(client, id);
+    if (!existing) throw new Error('Task not found');
 
-  const result = await query(
-    `UPDATE tasks SET title=$1, description=$2, priority=$3, project=$4, status=$5, task_order=$6, total_work=$7, estimated_work=$8, pr_url=$9, completed_at=$10, back_to_ready_reason=$11, back_to_ready_note=$12, updated_at=NOW()
-     WHERE id=$13
-     RETURNING id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, back_to_ready_reason, back_to_ready_note, created_at::text, updated_at::text`,
-    [title, description, priority, project, status, order, totalWork, estimatedWork, prUrl, completedAt, backToReadyReason, backToReadyNote, Number(id)]
-  );
-  const row = result.rows[0];
-  return {
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    priority: row.priority,
-    project: row.project,
-    status: row.status,
-    order: row.task_order,
-    totalWork: row.total_work,
-    estimatedWork: row.estimated_work,
-    prUrl: row.pr_url,
-    completedAt: row.completed_at,
-    backToReadyReason: row.back_to_ready_reason,
-    backToReadyNote: row.back_to_ready_note,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  };
+    const title = payload.title || existing.title;
+    const description = data.description !== undefined
+      ? payload.description
+      : existing.description;
+    const priority = data.priority !== undefined ? payload.priority : existing.priority;
+    const project = data.project !== undefined ? payload.project : existing.project;
+    const status = data.status !== undefined ? payload.status : existing.status;
+    const order = data.order !== undefined ? payload.order : existing.order;
+    const estimatedWork = data.estimatedWork !== undefined || data.totalWork !== undefined
+      ? payload.estimatedWork
+      : existing.estimatedWork;
+    const prUrl = data.prUrl !== undefined ? payload.prUrl : existing.prUrl;
+    const completedAt = data.completedAt !== undefined
+      ? payload.completedAt
+      : (isCompleted(status)
+        ? (existing.completedAt || new Date().toISOString())
+        : (data.status !== undefined ? null : existing.completedAt));
+    const backToReadyReason = data.backToReadyReason !== undefined
+      ? payload.backToReadyReason
+      : existing.backToReadyReason;
+    const backToReadyNote = data.backToReadyNote !== undefined
+      ? payload.backToReadyNote
+      : existing.backToReadyNote;
+
+    const result = await client.query(
+      `
+        UPDATE tasks
+        SET title = $1,
+            description = $2,
+            priority = $3,
+            project = $4,
+            status = $5,
+            task_order = $6,
+            total_work = $7,
+            estimated_work = $8,
+            pr_url = $9,
+            completed_at = $10,
+            back_to_ready_reason = $11,
+            back_to_ready_note = $12,
+            updated_at = NOW()
+        WHERE id = $13
+        RETURNING
+          id,
+          title,
+          description,
+          priority,
+          project,
+          status,
+          task_order,
+          total_work,
+          estimated_work,
+          pr_url,
+          completed_at::text AS completed_at,
+          back_to_ready_reason,
+          back_to_ready_note,
+          created_at::text AS created_at,
+          updated_at::text AS updated_at
+      `,
+      [
+        title,
+        description,
+        priority,
+        project,
+        status,
+        order,
+        estimatedWork,
+        estimatedWork,
+        prUrl,
+        completedAt,
+        backToReadyReason,
+        backToReadyNote,
+        Number(id),
+      ]
+    );
+
+    return toClientTask(result.rows[0]);
+  });
+}
+
+export async function move(id, data) {
+  await ensureSchema();
+  const payload = normalizeTaskInput(data);
+  const reasonProvided = Object.prototype.hasOwnProperty.call(data || {}, 'backToReadyReason');
+  const noteProvided = Object.prototype.hasOwnProperty.call(data || {}, 'backToReadyNote');
+
+  return withClient(async (client) => {
+    await client.query('BEGIN');
+    try {
+      const currentResult = await client.query(
+        `
+          ${TASK_SELECT}
+          WHERE id = $1
+          FOR UPDATE
+        `,
+        [Number(id)]
+      );
+
+      if (currentResult.rows.length === 0) {
+        throw new Error('Task not found');
+      }
+
+      const current = toClientTask(currentResult.rows[0]);
+      const sourceStatus = current.status;
+      const targetStatus = data.status !== undefined ? payload.status : current.status;
+      const targetOrder = payload.order == null ? current.order : payload.order;
+      const nextEstimatedWork = payload.estimatedWork != null ? payload.estimatedWork : current.estimatedWork;
+      const nextCompletedAt = payload.completedAt !== undefined
+        ? payload.completedAt
+        : (isCompleted(targetStatus)
+          ? (current.completedAt || new Date().toISOString())
+          : null);
+      const nextReason = reasonProvided ? payload.backToReadyReason : current.backToReadyReason;
+      const nextNote = noteProvided ? payload.backToReadyNote : current.backToReadyNote;
+
+      const sourceTasks = await loadOrderedTasksForStatus(client, sourceStatus);
+      const sourceWithoutCurrent = sourceTasks.filter((task) => task.id !== current.id);
+
+      let destinationTasks;
+      if (sourceStatus === targetStatus) {
+        const clampedOrder = Math.max(0, Math.min(targetOrder, sourceWithoutCurrent.length));
+        sourceWithoutCurrent.splice(clampedOrder, 0, {
+          ...current,
+          status: targetStatus,
+          order: clampedOrder,
+          estimatedWork: nextEstimatedWork,
+          totalWork: nextEstimatedWork,
+          completedAt: nextCompletedAt,
+          backToReadyReason: nextReason,
+          backToReadyNote: nextNote,
+        });
+        destinationTasks = sourceWithoutCurrent;
+        await reindexTasks(client, destinationTasks, targetStatus);
+      } else {
+        const destinationSource = await loadOrderedTasksForStatus(client, targetStatus);
+        const destinationWithoutCurrent = destinationSource.slice();
+        const clampedOrder = Math.max(0, Math.min(targetOrder, destinationWithoutCurrent.length));
+        destinationWithoutCurrent.splice(clampedOrder, 0, {
+          ...current,
+          status: targetStatus,
+          order: clampedOrder,
+          estimatedWork: nextEstimatedWork,
+          totalWork: nextEstimatedWork,
+          completedAt: nextCompletedAt,
+          backToReadyReason: nextReason,
+          backToReadyNote: nextNote,
+        });
+
+        await reindexTasks(client, sourceWithoutCurrent, sourceStatus);
+        await reindexTasks(client, destinationWithoutCurrent, targetStatus);
+        destinationTasks = destinationWithoutCurrent;
+      }
+
+      await client.query(
+        `
+          UPDATE tasks
+          SET title = $1,
+              description = $2,
+              priority = $3,
+              project = $4,
+              status = $5,
+              task_order = $6,
+              total_work = $7,
+              estimated_work = $8,
+              pr_url = $9,
+              completed_at = $10,
+              back_to_ready_reason = $11,
+              back_to_ready_note = $12,
+              updated_at = NOW()
+          WHERE id = $13
+        `,
+        [
+          current.title,
+          current.description,
+          current.priority,
+          current.project,
+          targetStatus,
+          Math.max(0, Math.min(targetOrder, destinationTasks.length - 1)),
+          nextEstimatedWork,
+          nextEstimatedWork,
+          current.prUrl,
+          nextCompletedAt,
+          nextReason,
+          nextNote,
+          current.id,
+        ]
+      );
+
+      const tasks = await fetchTasks(client);
+      const updatedTask = tasks.find((task) => task.id === current.id) || null;
+      await client.query('COMMIT');
+      return { task: updatedTask, tasks };
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    }
+  });
 }
 
 export async function remove(id) {
   await ensureSchema();
-  await query('DELETE FROM tasks WHERE id = $1', [Number(id)]);
+  return withClient(async (client) => {
+    await client.query('BEGIN');
+    try {
+      const existingResult = await client.query(
+        `
+          ${TASK_SELECT}
+          WHERE id = $1
+          FOR UPDATE
+        `,
+        [Number(id)]
+      );
+      if (existingResult.rows.length === 0) {
+        await client.query('ROLLBACK');
+        return;
+      }
+
+      const existing = toClientTask(existingResult.rows[0]);
+      await client.query('DELETE FROM tasks WHERE id = $1', [existing.id]);
+      const remaining = await loadOrderedTasksForStatus(client, existing.status);
+      await reindexTasks(client, remaining, existing.status);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    }
+  });
 }
 
 export async function getByStatus(status) {
   await ensureSchema();
-  const result = await query(
-    'SELECT id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, back_to_ready_reason, back_to_ready_note, created_at::text, updated_at::text FROM tasks WHERE status = $1 ORDER BY task_order ASC',
-    [status]
+  const normalizedStatus = TASK_STATUS_SET.has(status) ? status : 'not_started';
+  return withClient((client) =>
+    fetchTasks(
+      client,
+      'WHERE status = $1',
+      [normalizedStatus]
+    )
   );
-  return result.rows.map(row => ({
-    id: row.id,
-    title: row.title,
-    description: row.description,
-    priority: row.priority,
-    project: row.project,
-    status: row.status,
-    order: row.task_order,
-    totalWork: row.total_work,
-    estimatedWork: row.estimated_work,
-    prUrl: row.pr_url,
-    completedAt: row.completed_at,
-    backToReadyReason: row.back_to_ready_reason,
-    backToReadyNote: row.back_to_ready_note,
-    createdAt: row.created_at,
-    updatedAt: row.updated_at,
-  }));
 }
 
 export async function getSetting(key) {

@@ -3,15 +3,31 @@ import { useState } from "react";
 import { TaskProvider, useTasks } from "@/context/TaskContext";
 import { KanbanBoard } from "@/components/kanban/KanbanBoard";
 import { AddTaskForm } from "@/components/kanban/AddTaskForm";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Plus } from "lucide-react";
 
 function Board() {
-  const { addTask, loading, tasks } = useTasks();
+  const { addTask, loading, tasks, error, refresh } = useTasks();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const isInitialLoading = loading && tasks.length === 0;
+  const isInitialLoading = loading && tasks.length === 0 && !error;
+
+  if (error && tasks.length === 0) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background px-4">
+        <div className="max-w-sm rounded-2xl border border-border/80 bg-card p-6 text-center shadow-sm">
+          <h2 className="text-lg font-semibold text-foreground">Unable to load tasks</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Refresh the board to try again.
+          </p>
+          <Button className="mt-4" onClick={refresh}>
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   if (isInitialLoading) {
     return (
@@ -29,7 +45,7 @@ function Board() {
             <div>
               <h1 className="text-base font-semibold">Mineral Agent</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">
-                Manage and track tasks for the AI agent to work on
+                Queue tasks, move them through review, and keep the board in sync
               </p>
             </div>
           </div>
@@ -40,7 +56,7 @@ function Board() {
               className="h-10 w-10 rounded-xl px-0 sm:w-auto sm:px-4 sm:gap-1.5"
             >
               <Plus className="h-5 w-5 sm:h-4 sm:w-4" />
-              <span className="hidden sm:inline">New Task</span>
+              <span className="hidden sm:inline">Add task</span>
             </Button>
           </div>
         </div>

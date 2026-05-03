@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
+import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { Eye, EyeOff, LogOut, CheckCircle, AlertCircle } from "lucide-react";
 
 function SettingsClient() {
@@ -24,12 +24,12 @@ function SettingsClient() {
     setMessage(null);
 
     if (newPassword !== confirmPassword) {
-      setMessage({ type: "error", text: "New passwords do not match" });
+      setMessage({ type: "error", text: "New passwords do not match." });
       return;
     }
 
     if (newPassword.length < 1) {
-      setMessage({ type: "error", text: "Password cannot be empty" });
+      setMessage({ type: "error", text: "Password cannot be empty." });
       return;
     }
 
@@ -48,17 +48,17 @@ function SettingsClient() {
       const data = await res.json();
 
       if (!res.ok) {
-        setMessage({ type: "error", text: data.error || "Failed to change password" });
+        setMessage({ type: "error", text: data.error || "Failed to change password." });
         setLoading(false);
         return;
       }
 
-      setMessage({ type: "success", text: "Password changed successfully!" });
+      setMessage({ type: "success", text: "Password updated." });
       setCurrentPassword("");
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
-      setMessage({ type: "error", text: "Something went wrong. Please try again." });
+      setMessage({ type: "error", text: "Something went wrong. Try again." });
     }
 
     setLoading(false);
@@ -106,21 +106,21 @@ function SettingsClient() {
               </svg>
             </div>
             <div>
-              <h2 className="font-semibold text-foreground">Change Password</h2>
+              <h2 className="font-semibold text-foreground">Update password</h2>
               <p className="text-sm text-muted-foreground">
-                Change your dashboard password
+                Replace the current dashboard password
               </p>
             </div>
           </div>
 
           <form onSubmit={handleChangePassword} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="currentPassword">Current Password</Label>
+              <Label htmlFor="currentPassword">Current password</Label>
               <div className="relative">
                 <Input
                   id="currentPassword"
                   type={showPasswords ? "text" : "password"}
-                  placeholder="Enter current password"
+                  placeholder="Current password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
                   className="pr-10"
@@ -145,18 +145,18 @@ function SettingsClient() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="newPassword">New Password</Label>
+                <Label htmlFor="newPassword">New password</Label>
                 <Input
                   id="newPassword"
                   type={showPasswords ? "text" : "password"}
-                  placeholder="Enter new password"
+                  placeholder="New password"
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
                   autoComplete="new-password"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                <Label htmlFor="confirmPassword">Confirm new password</Label>
                 <Input
                   id="confirmPassword"
                   type={showPasswords ? "text" : "password"}
@@ -193,10 +193,10 @@ function SettingsClient() {
                 {loading ? (
                   <span className="flex items-center gap-2">
                     <LoadingSpinner size="sm" />
-                    Saving...
+                    Saving
                   </span>
                 ) : (
-                  "Save Changes"
+                  "Save changes"
                 )}
               </Button>
             </div>
@@ -211,14 +211,14 @@ function SettingsClient() {
                 <LogOut className="w-5 h-5 text-destructive" />
               </div>
               <div>
-                <h2 className="font-semibold text-foreground">Sign Out</h2>
+                <h2 className="font-semibold text-foreground">Sign out</h2>
                 <p className="text-sm text-muted-foreground">
-                  Sign out of your session
+                  End the current session
                 </p>
               </div>
             </div>
             <Button variant="destructive" onClick={handleLogout}>
-              Sign Out
+              Sign out
             </Button>
           </div>
         </section>

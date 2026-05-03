@@ -15,28 +15,28 @@ import { Button } from "@/components/ui/button";
 const REASONS = [
   {
     value: "conflict_when_merge_to_main",
-    label: "Conflict on merge",
+    label: "Merge conflict",
     destStatus: "ready_to_start",
-    description: "Auto-resolve conflicts and recreate PR",
+    description: "Resolve the conflict and recreate the pull request.",
   },
   {
     value: "manual_review_failed",
-    label: "Manual review failed",
+    label: "Review failed",
     destStatus: "not_started",
-    description: "Human reviewer rejected — needs manual re-queue",
+    description: "The review was rejected and the task needs another pass.",
   },
   {
     value: "other",
-    label: "Other",
+    label: "Other reason",
     destStatus: "not_started",
-    description: "Needs manual re-queue",
+    description: "Add a short note to explain why it is going back.",
   },
 ];
 
 export function KanbanBoard() {
   const { tasks, COLUMNS, updateTask, deleteTask, moveTask } = useTasks();
 
-  const [pendingMove, setPendingMove] = useState(null); // { taskId, destStatus, destIndex, taskTitle }
+  const [pendingMove, setPendingMove] = useState(null);
   const [selectedReason, setSelectedReason] = useState(null);
   const [note, setNote] = useState("");
   const [draggedTaskStatus, setDraggedTaskStatus] = useState(null);
@@ -81,7 +81,6 @@ export function KanbanBoard() {
           taskId: draggableId,
           destStatus: destination.droppableId,
           destIndex: destination.index,
-          taskTitle: task.title,
         });
         setSelectedReason(null);
         setNote("");
@@ -134,7 +133,7 @@ export function KanbanBoard() {
       <Dialog open={!!pendingMove} onOpenChange={(open) => !open && handleReasonCancel()}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Why is this task being moved back?</DialogTitle>
+            <DialogTitle>Move task back</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-3 py-2">

@@ -38,17 +38,14 @@ export const api = {
       body: JSON.stringify({ data }),
     }),
 
+  move: (id, data) =>
+    fetcher(`tasks/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify({ data }),
+    }),
+
   delete: (id) =>
     fetcher(`tasks/${id}`, { method: 'DELETE' }),
 
   updateStatus: (id, status) => api.update(id, { status }),
-
-  updateOrder: (tasks) =>
-    Promise.all(
-      tasks.map((t, i) =>
-        t.status !== 'completed'
-          ? api.update(t.id, { order: i })
-          : Promise.resolve()
-      )
-    ),
 };

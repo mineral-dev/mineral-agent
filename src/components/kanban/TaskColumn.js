@@ -2,6 +2,7 @@
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import { ArrowDownToLine } from "lucide-react";
 import { TaskCard } from "./TaskCard";
+import { TASK_STATUS_HELP } from "@/lib/tasks";
 
 export function TaskColumn({ column, tasks, onUpdate, onDelete, draggedTaskStatus }) {
   const isNotStartedDrag = draggedTaskStatus === "not_started";
@@ -79,16 +80,10 @@ export function TaskColumn({ column, tasks, onUpdate, onDelete, draggedTaskStatu
                 ) : (
                   <div className="pointer-events-none absolute left-2 right-2 top-[25vh] flex flex-col items-center justify-center text-center">
                     <p className="text-xs text-muted-foreground">
-                      {column.id === 'not_started' && 'No Not Started tasks'}
-                      {column.id === 'in_progress' && 'No In Progress tasks'}
-                      {column.id === 'in_review' && 'No In Review tasks'}
-                      {column.id === 'completed' && 'No Completed tasks'}
+                      {TASK_STATUS_HELP[column.id]?.emptyTitle}
                     </p>
                     <p className="text-xs text-muted-foreground/60 mt-0.5">
-                      {column.id === 'not_started' && 'Drag tasks here to queue them'}
-                      {column.id === 'in_progress' && "Tasks you're actively working on"}
-                      {column.id === 'in_review' && 'Tasks waiting for review'}
-                      {column.id === 'completed' && 'Finished tasks appear here'}
+                      {TASK_STATUS_HELP[column.id]?.emptyCopy}
                     </p>
                   </div>
                 )

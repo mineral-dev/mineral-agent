@@ -1,116 +1,90 @@
 'use client';
-import { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import { createContext, useContext, useCallback } from 'react';
+import useSWR from 'swr';
 import { api } from '@/lib/api';
+import { TASK_COLUMNS } from '@/lib/tasks';
 
 const TaskContext = createContext(null);
-const CACHE_KEY = 'mineral_tasks';
+const TASKS_KEY = 'tasks';
+
+async function fetchTasks() {
+  const result = await api.list();
+  return result.data || [];
+}
 
 export function TaskProvider({ children }) {
-  const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const { data, error, isLoading, mutate } = useSWR(TASKS_KEY, fetchTasks, {
+    revalidateOnFocus: true,
+    keepPreviousData: true,
+  });
 
-  const COLUMNS = [
-    { id: 'not_started',    label: 'To Do',           dotColor: 'bg-neutral-400', borderColor: 'border-l-neutral-400' },
-    { id: 'ready_to_start', label: 'Ready',           dotColor: 'bg-blue-500',    borderColor: 'border-l-blue-500'    },
-    { id: 'in_progress',    label: 'In Progress',    dotColor: 'bg-amber-500',   borderColor: 'border-l-amber-500'   },
-    { id: 'in_review',      label: 'In Review',      dotColor: 'bg-purple-500',  borderColor: 'border-l-purple-500'  },
-    { id: 'completed',      label: 'Completed',      dotColor: 'bg-emerald-600', borderColor: 'border-l-emerald-600' },
-  ];
+  const tasks = data || [];
+  const loading = isLoading && !data;
 
-  const saveCache = (data) => {
-    try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch {}
-  };
-
-  const refresh = useCallback(async () => {
-    try {
-      const data = await api.list();
-      const fresh = data.data || [];
-      setTasks(fresh);
-      saveCache(fresh);
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Load tasks on mount — show cached data immediately, then refresh in background
-  useEffect(() => {
-    let hasCached = false;
-    try {
-      const cached = localStorage.getItem(CACHE_KEY);
-      if (cached) {
-        setTasks(JSON.parse(cached));
-        hasCached = true;
-      }
-    } catch {}
-
-    if (!hasCached) setLoading(true);
-
-    api.list().then((data) => {
-      const fresh = data.data || [];
-      setTasks(fresh);
-      saveCache(fresh);
-    }).finally(() => setLoading(false));
-  }, []);
+  const refresh = useCallback(() => mutate(), [mutate]);
 
   const addTask = useCallback(async (taskData) => {
     const result = await api.create(taskData);
-    setTasks(prev => [result.data, ...prev]);
-    const cached = localStorage.getItem(CACHE_KEY);
-    try {
-      const current = JSON.parse(cached);
-      localStorage.setItem(CACHE_KEY, JSON.stringify([result.data, ...current]));
-    } catch { /* ignore */ }
-    return result.data;
-  }, []);
+    const created = result.data;
+    await mutate((current = []) => [created, ...current], {
+      revalidate: false,
+      populateCache: true,
+    });
+    return created;
+  }, [mutate]);
 
   const updateTask = useCallback(async (id, updates) => {
-    await api.update(id, updates);
-    setTasks(prev => prev.map(t => t.id == id ? { ...t, ...updates } : t));
-    const cached = localStorage.getItem(CACHE_KEY);
-    try {
-      const current = JSON.parse(cached);
-      localStorage.setItem(CACHE_KEY, JSON.stringify(
-        current.map(t => t.id == id ? { ...t, ...updates } : t)
-      ));
-    } catch { /* ignore */ }
-  }, []);
+    const result = await api.update(id, updates);
+    const updated = result.data;
+    await mutate((current = []) => current.map((task) => (
+      Number(task.id) === Number(id) ? { ...task, ...updated } : task
+    )), {
+      revalidate: false,
+      populateCache: true,
+    });
+    return updated;
+  }, [mutate]);
 
   const deleteTask = useCallback(async (id) => {
     await api.delete(id);
-    setTasks(prev => prev.filter(t => t.id != id));
-    const cached = localStorage.getItem(CACHE_KEY);
-    try {
-      const current = JSON.parse(cached);
-      localStorage.setItem(CACHE_KEY, JSON.stringify(current.filter(t => t.id != id)));
-    } catch { /* ignore */ }
-  }, []);
+    await mutate((current = []) => current.filter((task) => Number(task.id) !== Number(id)), {
+      revalidate: false,
+      populateCache: true,
+    });
+  }, [mutate]);
 
   const moveTask = useCallback(async (taskId, newStatus, newOrder, reason, note) => {
-    setTasks(prev => {
-      const others = prev.filter(t => t.id != taskId);
-      const task = prev.find(t => t.id == taskId);
-      if (!task) return prev;
-      const updated = { ...task, status: newStatus, order: newOrder };
-
-      if (newStatus !== 'completed') {
-        const inDest = others.filter(t => t.status === newStatus);
-        const elsewhere = others.filter(t => t.status !== newStatus);
-        inDest.splice(newOrder, 0, updated);
-        return [...elsewhere, ...inDest];
-      }
-
-      return [...others, updated];
+    const result = await api.move(taskId, {
+      status: newStatus,
+      order: newOrder,
+      backToReadyReason: reason,
+      backToReadyNote: note,
     });
 
-    const payload = { status: newStatus };
-    if ((newStatus === 'ready_to_start' || newStatus === 'not_started') && reason) {
-      payload.backToReadyReason = reason;
-      if (note) payload.backToReadyNote = note;
+    if (Array.isArray(result.tasks)) {
+      await mutate(result.tasks, {
+        revalidate: false,
+        populateCache: true,
+      });
+      return result.data;
     }
-    await api.update(taskId, payload);
-  }, []);
 
-  const value = { tasks, loading, COLUMNS, refresh, addTask, updateTask, deleteTask, moveTask };
+    await mutate();
+    return result.data;
+  }, [mutate]);
+
+  const value = {
+    tasks,
+    loading,
+    error,
+    COLUMNS: TASK_COLUMNS,
+    refresh,
+    addTask,
+    updateTask,
+    deleteTask,
+    moveTask,
+  };
+
   return <TaskContext.Provider value={value}>{children}</TaskContext.Provider>;
 }
 

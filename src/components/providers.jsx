@@ -7,7 +7,7 @@ export function Providers({ children }) {
     <ThemeProvider
       attribute="class"
       defaultTheme="dark"
-      enableSystem
+      enableSystem={false}
       storageKey="mineral-theme"
     >
       {children}
