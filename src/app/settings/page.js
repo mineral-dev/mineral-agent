@@ -108,7 +108,7 @@ function SettingsClient() {
             <div>
               <h2 className="font-semibold text-foreground">Change Password</h2>
               <p className="text-sm text-muted-foreground">
-                Update your login password
+                Change your dashboard password
               </p>
             </div>
           </div>

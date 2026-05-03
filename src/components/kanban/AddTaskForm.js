@@ -117,7 +117,7 @@ function TaskFormInner({ form, setForm, onSubmit, error }) {
           Project
         </label>
         <Input
-          placeholder="mineral-dev/repo-name (optional)"
+          placeholder="e.g. owner/repo-name"
           value={form.project}
           onChange={(e) => setForm((f) => ({ ...f, project: e.target.value }))}
           className="h-11 font-mono"
@@ -195,7 +195,7 @@ export function AddTaskForm({ open, onOpenChange, onAdd }) {
           <DialogHeader>
             <DialogTitle className="text-lg">Create New Task</DialogTitle>
             <DialogDescription className="text-sm">
-              Fill in the details below and set a priority.
+              Describe the task and choose a priority. Higher priority tasks get picked up first.
             </DialogDescription>
           </DialogHeader>
           <TaskFormInner
@@ -225,7 +225,7 @@ export function AddTaskForm({ open, onOpenChange, onAdd }) {
             <SheetTitle className="text-lg">New Task</SheetTitle>
           </div>
           <SheetDescription className="text-sm">
-            Fill in the details below and set a priority.
+            Describe the task and choose a priority. Higher priority tasks get picked up first.
           </SheetDescription>
         </SheetHeader>
         <div className="px-4">

@@ -10,8 +10,8 @@ export function TaskProvider({ children }) {
   const [loading, setLoading] = useState(false);
 
   const COLUMNS = [
-    { id: 'not_started',    label: 'Not Started',    dotColor: 'bg-neutral-400', borderColor: 'border-l-neutral-400' },
-    { id: 'ready_to_start', label: 'Ready to Start', dotColor: 'bg-blue-500',    borderColor: 'border-l-blue-500'    },
+    { id: 'not_started',    label: 'To Do',           dotColor: 'bg-neutral-400', borderColor: 'border-l-neutral-400' },
+    { id: 'ready_to_start', label: 'Ready',           dotColor: 'bg-blue-500',    borderColor: 'border-l-blue-500'    },
     { id: 'in_progress',    label: 'In Progress',    dotColor: 'bg-amber-500',   borderColor: 'border-l-amber-500'   },
     { id: 'in_review',      label: 'In Review',      dotColor: 'bg-purple-500',  borderColor: 'border-l-purple-500'  },
     { id: 'approved',       label: 'Approved',       dotColor: 'bg-sky-500',     borderColor: 'border-l-sky-500'     },

@@ -60,7 +60,7 @@ export function TaskColumn({ column, tasks, onUpdate, onDelete }) {
                   Nothing here yet
                 </p>
                 <p className="text-xs text-muted-foreground/60 mt-0.5">
-                  Drag a card here
+                  Drop a task here to move it
                 </p>
               </div>
             )}

@@ -31,7 +31,7 @@ function Board() {
             <div>
               <h1 className="text-base font-semibold">Mineral Agent</h1>
               <p className="text-xs text-muted-foreground hidden sm:block">
-                Queue tasks for Hermes
+                Manage and track tasks for the AI agent to work on
               </p>
             </div>
           </div>

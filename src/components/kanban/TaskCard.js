@@ -87,7 +87,7 @@ function DetailMetric({ icon: Icon, label, value }) {
         <span>{label}</span>
       </div>
       <div className="mt-2 text-sm font-medium break-words text-foreground">
-        {value || "—"}
+        {value || "Not tracked"}
       </div>
     </div>
   );
@@ -101,7 +101,7 @@ function EditFormInner({ form, setForm, onSubmit }) {
           Title *
         </label>
         <Input
-          placeholder="What needs to be done?"
+          placeholder="e.g. Fix login bug, Add new feature"
           value={form.title}
           onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
           onKeyDown={(e) =>
@@ -216,7 +216,7 @@ function TaskDetailInner({ task, formatTime, projectLabel, showTimeWork }) {
           Description
         </div>
         <p className="mt-2 whitespace-pre-line text-sm leading-6 text-foreground/90">
-          {task.description || "No description added."}
+          {task.description || "Add a description to give the agent more context"}
         </p>
       </div>
 
@@ -251,7 +251,7 @@ function TaskDetailInner({ task, formatTime, projectLabel, showTimeWork }) {
         >
           <a href={task.prUrl} target="_blank" rel="noopener noreferrer">
             <GitPullRequest className="w-4 h-4" />
-            Open pull request
+            View PR
           </a>
         </Button>
       )}
