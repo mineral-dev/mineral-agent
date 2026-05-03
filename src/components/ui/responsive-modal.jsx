@@ -55,7 +55,7 @@ export function ResponsiveModal({
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side={mobileContentSide} className={mobileClassName}>
+      <SheetContent side={mobileContentSide} className={mobileClassName} onOpenAutoFocus={(e) => e.preventDefault()}>
         <div className={mobileBodyClassName}>
           <SheetHeader className="pb-4">
             <SheetTitle className={mobileTitleClassName}>{title}</SheetTitle>
