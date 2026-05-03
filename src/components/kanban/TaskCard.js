@@ -2,6 +2,7 @@
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +51,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
     title: task.title,
     description: task.description || '',
     priority: task.priority || 'normal',
+    project: task.project || '',
   });
 
   const handlePriorityChange = (value) => {
@@ -61,6 +63,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
       title: form.title,
       description: form.description,
       priority: form.priority,
+      project: form.project,
     });
     setEditing(false);
   };
@@ -71,6 +74,7 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
       title: task.title,
       description: task.description || '',
       priority: task.priority || 'normal',
+      project: task.project || '',
     });
   };
 
@@ -97,12 +101,13 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
           rows={1}
           className="resize-none min-h-0 text-xs text-muted-foreground border-none shadow-none bg-transparent focus-visible:ring-0 px-0 py-0 leading-snug"
         />
-        {task.project && (
-          <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border w-fit">
-            <Folder className="w-3 h-3 shrink-0" />
-            {task.project}
-          </span>
-        )}
+        <Input
+          value={form.project}
+          onChange={(e) => setForm((f) => ({ ...f, project: e.target.value }))}
+          onKeyDown={(e) => e.key === 'Escape' && cancel()}
+          placeholder="mineral-dev/repo-name"
+          className="h-7 text-xs border border-border rounded-full bg-background text-muted-foreground placeholder:text-muted-foreground/60 px-2.5 py-1 focus-visible:ring-1 focus-visible:ring-primary/50"
+        />
         <div className="flex rounded-lg border border-border overflow-hidden">
           {PRIORITIES.map((p) => {
             const active = form.priority === p.value;
