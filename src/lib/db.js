@@ -50,6 +50,17 @@ async function initSchema() {
     ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ
   `);
   await query(`
+    ALTER TABLE tasks ADD COLUMN IF NOT EXISTS back_to_ready_reason TEXT
+      CHECK (back_to_ready_reason IN (
+        'conflict_when_merge_to_main',
+        'manual_review_failed',
+        'other'
+      ))
+  `);
+  await query(`
+    ALTER TABLE tasks ADD COLUMN IF NOT EXISTS back_to_ready_note TEXT
+  `);
+  await query(`
     CREATE TABLE IF NOT EXISTS settings (
       key TEXT PRIMARY KEY,
       value TEXT NOT NULL
@@ -75,7 +86,7 @@ async function ensureSchema() {
 export async function getAll() {
   await ensureSchema();
   const result = await query(
-    'SELECT id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, created_at::text, updated_at::text FROM tasks ORDER BY task_order ASC'
+    'SELECT id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, back_to_ready_reason, back_to_ready_note, created_at::text, updated_at::text FROM tasks ORDER BY task_order ASC'
   );
   return result.rows.map(row => ({
     id: row.id,
@@ -89,6 +100,8 @@ export async function getAll() {
     estimatedWork: row.estimated_work,
     prUrl: row.pr_url,
     completedAt: row.completed_at,
+    backToReadyReason: row.back_to_ready_reason,
+    backToReadyNote: row.back_to_ready_note,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
@@ -97,7 +110,7 @@ export async function getAll() {
 export async function getById(id) {
   await ensureSchema();
   const result = await query(
-    'SELECT id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, created_at::text, updated_at::text FROM tasks WHERE id = $1',
+    'SELECT id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, back_to_ready_reason, back_to_ready_note, created_at::text, updated_at::text FROM tasks WHERE id = $1',
     [Number(id)]
   );
   if (result.rows.length === 0) return null;
@@ -114,6 +127,8 @@ export async function getById(id) {
     estimatedWork: row.estimated_work,
     prUrl: row.pr_url,
     completedAt: row.completed_at,
+    backToReadyReason: row.back_to_ready_reason,
+    backToReadyNote: row.back_to_ready_note,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -136,12 +151,14 @@ export async function create(data) {
   const completedAt = data.completedAt !== undefined
     ? data.completedAt
     : (status === 'completed' ? new Date().toISOString() : null);
+  const backToReadyReason = data.backToReadyReason ?? null;
+  const backToReadyNote = data.backToReadyNote ?? null;
 
   const result = await query(
-    `INSERT INTO tasks (title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-     RETURNING id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, created_at::text, updated_at::text`,
-    [title, description, priority, project, status, order, totalWork, estimatedWork, null, completedAt]
+    `INSERT INTO tasks (title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at, back_to_ready_reason, back_to_ready_note)
+     VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+     RETURNING id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, back_to_ready_reason, back_to_ready_note, created_at::text, updated_at::text`,
+    [title, description, priority, project, status, order, totalWork, estimatedWork, null, completedAt, backToReadyReason, backToReadyNote]
   );
   const row = result.rows[0];
   return {
@@ -156,6 +173,8 @@ export async function create(data) {
     estimatedWork: row.estimated_work,
     prUrl: row.pr_url,
     completedAt: row.completed_at,
+    backToReadyReason: row.back_to_ready_reason,
+    backToReadyNote: row.back_to_ready_note,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -184,12 +203,14 @@ export async function update(id, data) {
     : (status === 'completed'
       ? (existing.completedAt || new Date().toISOString())
       : existing.completedAt);
+  const backToReadyReason = data.backToReadyReason !== undefined ? data.backToReadyReason : existing.backToReadyReason;
+  const backToReadyNote = data.backToReadyNote !== undefined ? data.backToReadyNote : existing.backToReadyNote;
 
   const result = await query(
-    `UPDATE tasks SET title=$1, description=$2, priority=$3, project=$4, status=$5, task_order=$6, total_work=$7, estimated_work=$8, pr_url=$9, completed_at=$10, updated_at=NOW()
-     WHERE id=$11
-     RETURNING id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, created_at::text, updated_at::text`,
-    [title, description, priority, project, status, order, totalWork, estimatedWork, prUrl, completedAt, Number(id)]
+    `UPDATE tasks SET title=$1, description=$2, priority=$3, project=$4, status=$5, task_order=$6, total_work=$7, estimated_work=$8, pr_url=$9, completed_at=$10, back_to_ready_reason=$11, back_to_ready_note=$12, updated_at=NOW()
+     WHERE id=$13
+     RETURNING id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, back_to_ready_reason, back_to_ready_note, created_at::text, updated_at::text`,
+    [title, description, priority, project, status, order, totalWork, estimatedWork, prUrl, completedAt, backToReadyReason, backToReadyNote, Number(id)]
   );
   const row = result.rows[0];
   return {
@@ -204,6 +225,8 @@ export async function update(id, data) {
     estimatedWork: row.estimated_work,
     prUrl: row.pr_url,
     completedAt: row.completed_at,
+    backToReadyReason: row.back_to_ready_reason,
+    backToReadyNote: row.back_to_ready_note,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -217,7 +240,7 @@ export async function remove(id) {
 export async function getByStatus(status) {
   await ensureSchema();
   const result = await query(
-    'SELECT id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, created_at::text, updated_at::text FROM tasks WHERE status = $1 ORDER BY task_order ASC',
+    'SELECT id, title, description, priority, project, status, task_order, total_work, estimated_work, pr_url, completed_at::text, back_to_ready_reason, back_to_ready_note, created_at::text, updated_at::text FROM tasks WHERE status = $1 ORDER BY task_order ASC',
     [status]
   );
   return result.rows.map(row => ({
@@ -232,6 +255,8 @@ export async function getByStatus(status) {
     estimatedWork: row.estimated_work,
     prUrl: row.pr_url,
     completedAt: row.completed_at,
+    backToReadyReason: row.back_to_ready_reason,
+    backToReadyNote: row.back_to_ready_note,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));

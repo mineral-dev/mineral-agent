@@ -5,3 +5,5 @@
 [2026-05-02T18:43:00Z] [hermes] Completed task #2 (change to dark mode theme) on branch hermes/coder-work-a3f2
 [2026-05-03T05:01:27.731Z] [mineral-agent] No tasks in "ready_to_start" — nothing to pick up.
 [2026-05-03T05:36:45Z] [hermes] FAILED task #15 (add simple login page): Codex timed out after 600s without producing any code changes — rolled back
+[2026-05-03T14:23:43Z] [hermes] Completed task #26 (add new priority) on branch hermes/coder-work-add-new-priority-9a2e, PR: https://github.com/mineral-dev/mineral-agent/pull/25
+[2026-05-03T14:44:38Z] [hermes] Completed task #27 (task card) on branch hermes/coder-work-task-card — PR: https://github.com/mineral-dev/mineral-agent/pull/28 → in_review

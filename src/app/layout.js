@@ -24,7 +24,13 @@ export default function RootLayout({ children }) {
                   const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
                   const theme = stored === "light" || stored === "dark" ? stored : (prefersDark ? "dark" : "light");
                   root.classList.toggle("dark", theme === "dark");
+                  root.setAttribute("data-theme", theme);
                   root.style.colorScheme = theme;
+                  // Set background on html element to cover full viewport before paint
+                  root.style.backgroundColor = theme === "dark"
+                    ? "oklch(0.145 0 0)"
+                    : "oklch(1 0 0)";
+                  document.body.style.backgroundColor = "transparent";
                 } catch (error) {}
               })();
             `,
