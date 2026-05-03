@@ -19,6 +19,7 @@ import {
   SheetDescription,
   SheetFooter,
 } from "@/components/ui/sheet";
+import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Plus, X, Zap } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
@@ -130,23 +131,6 @@ function TaskFormInner({ form, setForm, onSubmit, error }) {
   );
 }
 
-function AgentSparkLoader() {
-  return (
-    <span className="inline-flex items-center gap-[3px]">
-      {[0, 1, 2, 3].map((i) => (
-        <span
-          key={i}
-          className="block w-[5px] h-[5px] bg-current"
-          style={{
-            clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)",
-            animation: `agent-spark 1s ease-in-out ${i * 0.14}s infinite`,
-          }}
-        />
-      ))}
-    </span>
-  );
-}
-
 function FormButtons({ onCancel, onSubmit, isSubmitting, titleEmpty }) {
   return (
     <>
@@ -165,7 +149,7 @@ function FormButtons({ onCancel, onSubmit, isSubmitting, titleEmpty }) {
       >
         {isSubmitting ? (
           <>
-            <LoadingSpinner />
+            <LoadingSpinner size="sm" />
             Creating
           </>
         ) : (
