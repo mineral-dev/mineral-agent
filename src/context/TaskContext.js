@@ -4,9 +4,10 @@ import { api } from '@/lib/api';
 
 const TaskContext = createContext(null);
 
+const CACHE_KEY = 'mineral_tasks';
+
 export function TaskProvider({ children }) {
   const [tasks, setTasks] = useState([]);
-  const [loading, setLoading] = useState(false);
 
   const COLUMNS = [
     { id: 'not_started',    label: 'Not Started',    dotColor: 'bg-neutral-400', borderColor: 'border-l-neutral-400' },
@@ -17,55 +18,60 @@ export function TaskProvider({ children }) {
   ];
 
   const refresh = useCallback(async () => {
-    setLoading(true);
     try {
       const data = await api.list();
-      setTasks(data.data || []);
-      localStorage.setItem('mineral_tasks', JSON.stringify(data.data || []));
-    } finally {
-      setLoading(false);
+      const fresh = data.data || [];
+      setTasks(fresh);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(fresh));
+    } catch (err) {
+      console.error('Failed to refresh tasks:', err);
     }
   }, []);
 
-  // Load tasks on mount - use cached data first, then fetch fresh data
+  // Load on mount: show cache immediately, fetch in background to update
   useEffect(() => {
-    const cached = localStorage.getItem('mineral_tasks');
+    const cached = localStorage.getItem(CACHE_KEY);
     if (cached) {
       try {
-        const parsed = JSON.parse(cached);
-        setTasks(parsed);
+        setTasks(JSON.parse(cached));
       } catch {
         // ignore parse errors
       }
     }
-
-    const load = async () => {
-      setLoading(true);
-      try {
-        const data = await api.list();
-        setTasks(data.data || []);
-        localStorage.setItem('mineral_tasks', JSON.stringify(data.data || []));
-      } finally {
-        setLoading(false);
-      }
-    };
-    load();
-  }, []);
+    refresh();
+  }, [refresh]);
 
   const addTask = useCallback(async (taskData) => {
     const result = await api.create(taskData);
     setTasks(prev => [result.data, ...prev]);
+    const cached = localStorage.getItem(CACHE_KEY);
+    try {
+      const current = JSON.parse(cached);
+      localStorage.setItem(CACHE_KEY, JSON.stringify([result.data, ...current]));
+    } catch { /* ignore */ }
     return result.data;
   }, []);
 
   const updateTask = useCallback(async (id, updates) => {
     await api.update(id, updates);
-      setTasks(prev => prev.map(t => t.id == id ? { ...t, ...updates } : t));
+    setTasks(prev => prev.map(t => t.id == id ? { ...t, ...updates } : t));
+    const cached = localStorage.getItem(CACHE_KEY);
+    try {
+      const current = JSON.parse(cached);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(
+        current.map(t => t.id == id ? { ...t, ...updates } : t)
+      ));
+    } catch { /* ignore */ }
   }, []);
 
   const deleteTask = useCallback(async (id) => {
     await api.delete(id);
     setTasks(prev => prev.filter(t => t.id != id));
+    const cached = localStorage.getItem(CACHE_KEY);
+    try {
+      const current = JSON.parse(cached);
+      localStorage.setItem(CACHE_KEY, JSON.stringify(current.filter(t => t.id != id)));
+    } catch { /* ignore */ }
   }, []);
 
   const moveTask = useCallback(async (taskId, newStatus, newOrder) => {
@@ -87,7 +93,7 @@ export function TaskProvider({ children }) {
     await api.update(taskId, { status: newStatus });
   }, []);
 
-  const value = { tasks, loading, COLUMNS, refresh, addTask, updateTask, deleteTask, moveTask };
+  const value = { tasks, COLUMNS, refresh, addTask, updateTask, deleteTask, moveTask };
   return <TaskContext.Provider value={value}>{children}</TaskContext.Provider>;
 }
 
