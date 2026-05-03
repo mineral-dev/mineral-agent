@@ -13,6 +13,7 @@ export function TaskProvider({ children }) {
     { id: 'ready_to_start', label: 'Ready to Start', dotColor: 'bg-blue-500',    borderColor: 'border-l-blue-500'    },
     { id: 'in_progress',    label: 'In Progress',    dotColor: 'bg-amber-500',   borderColor: 'border-l-amber-500'   },
     { id: 'in_review',      label: 'In Review',      dotColor: 'bg-purple-500',  borderColor: 'border-l-purple-500'  },
+    { id: 'approved',       label: 'Approved',       dotColor: 'bg-emerald-500', borderColor: 'border-l-emerald-500' },
     { id: 'completed',      label: 'Completed',      dotColor: 'bg-green-500',   borderColor: 'border-l-green-500'   },
   ];
 
@@ -62,7 +63,7 @@ export function TaskProvider({ children }) {
       const task = prev.find(t => t.id == taskId);
       if (!task) return prev;
       const updated = { ...task, status: newStatus, order: newOrder };
-      if (newStatus !== 'completed') {
+      if (newStatus !== 'completed' && newStatus !== 'approved') {
         return [...others.filter(t => t.status !== newStatus || t.status === newStatus), updated]
           .sort((a, b) => a.order - b.order);
       }

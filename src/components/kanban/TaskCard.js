@@ -24,7 +24,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Clock, Folder, MoreHorizontal, Pencil, Trash2, Zap } from 'lucide-react';
+import { Clock, Folder, Github, MoreHorizontal, Pencil, Trash2, Zap } from 'lucide-react';
 import { useState, useCallback } from 'react';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 
@@ -237,6 +237,18 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
                   <Clock className="w-3 h-3 shrink-0" />
                   {formatTime(task.totalWork)}
                 </span>
+              )}
+              {task.prUrl && task.status === 'in_review' && (
+                <a
+                  href={task.prUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-600 font-medium dark:bg-purple-950/40 dark:text-purple-400 hover:underline"
+                >
+                  <Github className="w-3 h-3 shrink-0" />
+                  PR
+                </a>
               )}
             </div>
           )}
