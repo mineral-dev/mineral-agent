@@ -212,7 +212,7 @@ export function AddTaskForm({ open, onOpenChange, onAdd }) {
           <DialogHeader>
             <DialogTitle className="text-lg">Create New Task</DialogTitle>
             <DialogDescription className="text-sm">
-              Fill in the details below and set a priority.
+              Add a task for the AI agent to work on. Set a title and optional description, then choose a priority.
             </DialogDescription>
           </DialogHeader>
           <TaskFormInner
@@ -242,7 +242,7 @@ export function AddTaskForm({ open, onOpenChange, onAdd }) {
             <SheetTitle className="text-lg">New Task</SheetTitle>
           </div>
           <SheetDescription className="text-sm">
-            Fill in the details below and set a priority.
+            Add a task for the AI agent to work on. Set a title and optional description, then choose a priority.
           </SheetDescription>
         </SheetHeader>
         <div className="px-4">
