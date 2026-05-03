@@ -39,6 +39,7 @@ export function KanbanBoard() {
   const [pendingMove, setPendingMove] = useState(null); // { taskId, destStatus, destIndex, taskTitle }
   const [selectedReason, setSelectedReason] = useState(null);
   const [note, setNote] = useState("");
+  const [draggedTaskStatus, setDraggedTaskStatus] = useState(null);
 
   const byColumn = (colId) => {
     let filtered = tasks
@@ -62,6 +63,7 @@ export function KanbanBoard() {
 
   const onDragEnd = async (result) => {
     const { source, destination, draggableId } = result;
+    setDraggedTaskStatus(null);
     if (!destination) return;
     if (source.droppableId === destination.droppableId && source.index === destination.index) return;
 
@@ -90,6 +92,11 @@ export function KanbanBoard() {
     await moveTask(draggableId, destination.droppableId, destination.index);
   };
 
+  const onDragStart = (result) => {
+    const task = tasks.find((t) => String(t.id) === String(result.draggableId));
+    setDraggedTaskStatus(task?.status ?? null);
+  };
+
   const handleReasonConfirm = async () => {
     if (!pendingMove || !selectedReason) return;
     const reasonDef = REASONS.find((r) => r.value === selectedReason);
@@ -109,7 +116,7 @@ export function KanbanBoard() {
 
   return (
     <>
-      <DragDropContext onDragEnd={onDragEnd}>
+      <DragDropContext onDragStart={onDragStart} onDragEnd={onDragEnd}>
         <div className="flex gap-3 overflow-x-auto pb-4 pr-16 sm:pr-32 [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {COLUMNS.map((col) => (
             <TaskColumn
@@ -118,6 +125,7 @@ export function KanbanBoard() {
               tasks={byColumn(col.id)}
               onUpdate={updateTask}
               onDelete={deleteTask}
+              draggedTaskStatus={draggedTaskStatus}
             />
           ))}
         </div>

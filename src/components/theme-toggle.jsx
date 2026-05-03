@@ -1,50 +1,24 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Moon, SunMedium } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
+import { useTheme } from "next-themes";
 
 import { cn } from "@/lib/utils";
 
-const STORAGE_KEY = "mineral-theme";
-
-function applyTheme(theme) {
-  const root = document.documentElement;
-  root.classList.toggle("dark", theme === "dark");
-  root.style.colorScheme = theme;
-}
-
 export function ThemeToggle({ className }) {
-  const [theme, setTheme] = useState(() => {
-    if (typeof window === "undefined") {
-      return "dark";
-    }
-
-    try {
-      const storedTheme = window.localStorage.getItem(STORAGE_KEY);
-      if (storedTheme === "light" || storedTheme === "dark") {
-        return storedTheme;
-      }
-    } catch (error) {}
-
-    return document.documentElement.classList.contains("dark")
-      ? "dark"
-      : "light";
-  });
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    applyTheme(theme);
-  }, [theme]);
+    setMounted(true);
+  }, []);
 
   const toggleTheme = () => {
-    const nextTheme = theme === "dark" ? "light" : "dark";
-    setTheme(nextTheme);
-    try {
-      window.localStorage.setItem(STORAGE_KEY, nextTheme);
-    } catch (error) {}
-    applyTheme(nextTheme);
+    setTheme(isDark ? "light" : "dark");
   };
 
-  const isDark = theme === "dark";
+  const isDark = !mounted || resolvedTheme === "dark";
 
   return (
     <button
@@ -70,7 +44,7 @@ export function ThemeToggle({ className }) {
         {isDark ? (
           <Moon className="h-3.5 w-3.5" />
         ) : (
-          <SunMedium className="h-3.5 w-3.5" />
+          <Sun className="h-3.5 w-3.5" />
         )}
       </span>
       <span className="sr-only">

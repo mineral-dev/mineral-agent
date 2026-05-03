@@ -1,8 +1,12 @@
 "use client";
 import { Droppable, Draggable } from "@hello-pangea/dnd";
+import { ArrowDownToLine } from "lucide-react";
 import { TaskCard } from "./TaskCard";
 
-export function TaskColumn({ column, tasks, onUpdate, onDelete }) {
+export function TaskColumn({ column, tasks, onUpdate, onDelete, draggedTaskStatus }) {
+  const isNotStartedDrag = draggedTaskStatus === "not_started";
+  const isOnlyValidTarget = !isNotStartedDrag || column.id === "ready_to_start";
+
   return (
     <div className="w-64 sm:w-72 shrink-0 flex flex-col min-h-full translate-x-4 sm:translate-x-6">
       <div
@@ -25,11 +29,13 @@ export function TaskColumn({ column, tasks, onUpdate, onDelete }) {
           <div
             ref={provided.innerRef}
             {...provided.droppableProps}
-            className={`flex-1 min-h-[calc(100svh-8rem)] sm:min-h-[calc(100svh-10rem)] p-2 rounded-b-xl border-x border-b transition-colors ${
-              snapshot.isDraggingOver
-                ? "bg-primary/5 border-primary/20"
+            className={`relative flex-1 min-h-[calc(100svh-8rem)] sm:min-h-[calc(100svh-10rem)] p-2 rounded-b-xl border-x border-b transition-colors ${
+              column.id === "ready_to_start"
+                ? snapshot.isDraggingOver
+                  ? "bg-blue-500/7 border-blue-500/30"
+                  : "bg-blue-500/4 border-dashed border-blue-500/15"
                 : "bg-muted/5"
-            }`}
+            } ${isNotStartedDrag && !isOnlyValidTarget ? "cursor-not-allowed" : ""}`}
           >
             {tasks.map((task, index) => (
               <Draggable
@@ -54,22 +60,42 @@ export function TaskColumn({ column, tasks, onUpdate, onDelete }) {
               </Draggable>
             ))}
             {provided.placeholder}
-            {tasks.length === 0 && !snapshot.isDraggingOver && (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <p className="text-xs text-muted-foreground">
-                  {column.id === 'not_started' && 'No Not Started tasks'}
-                  {column.id === 'ready_to_start' && 'No Ready to Start tasks'}
-                  {column.id === 'in_progress' && 'No In Progress tasks'}
-                  {column.id === 'in_review' && 'No In Review tasks'}
-                  {column.id === 'completed' && 'No Completed tasks'}
-                </p>
-                <p className="text-xs text-muted-foreground/60 mt-0.5">
-                  {column.id === 'not_started' && 'Drag tasks here to queue them'}
-                  {column.id === 'ready_to_start' && 'Tasks ready to be picked up'}
-                  {column.id === 'in_progress' && "Tasks you're actively working on"}
-                  {column.id === 'in_review' && 'Tasks waiting for review'}
-                  {column.id === 'completed' && 'Finished tasks appear here'}
-                </p>
+            {tasks.length === 0 &&
+              !(snapshot.isDraggingOver && column.id === "ready_to_start") && (
+                column.id === "ready_to_start" ? (
+                  <div className="pointer-events-none absolute left-2 right-2 top-[25vh]">
+                      <div className="rounded-2xl border-2 border-dashed border-blue-500/30 bg-blue-500/5 px-4 py-6 text-center shadow-sm">
+                      <div className="mx-auto mb-3 flex h-11 w-11 items-center justify-center rounded-full border border-blue-500/20 bg-blue-500/10 text-blue-500">
+                        <ArrowDownToLine className="h-5 w-5" />
+                      </div>
+                      <p className="text-sm font-semibold text-foreground">
+                        Ready to start
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground/80">
+                        Drop a not-started task here to queue it for work.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="pointer-events-none absolute left-2 right-2 top-[25vh] flex flex-col items-center justify-center text-center">
+                    <p className="text-xs text-muted-foreground">
+                      {column.id === 'not_started' && 'No Not Started tasks'}
+                      {column.id === 'in_progress' && 'No In Progress tasks'}
+                      {column.id === 'in_review' && 'No In Review tasks'}
+                      {column.id === 'completed' && 'No Completed tasks'}
+                    </p>
+                    <p className="text-xs text-muted-foreground/60 mt-0.5">
+                      {column.id === 'not_started' && 'Drag tasks here to queue them'}
+                      {column.id === 'in_progress' && "Tasks you're actively working on"}
+                      {column.id === 'in_review' && 'Tasks waiting for review'}
+                      {column.id === 'completed' && 'Finished tasks appear here'}
+                    </p>
+                  </div>
+                )
+              )}
+            {isNotStartedDrag && !isOnlyValidTarget && (
+              <div className="pointer-events-none absolute inset-x-2 bottom-2 rounded-lg border border-dashed border-muted-foreground/15 bg-muted/20 px-3 py-2 text-center text-[11px] uppercase tracking-wide text-muted-foreground/70">
+                Drop disabled
               </div>
             )}
           </div>

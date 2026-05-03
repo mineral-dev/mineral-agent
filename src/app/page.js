@@ -7,12 +7,10 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Plus } from "lucide-react";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 
 function Board() {
   const { addTask, loading, tasks } = useTasks();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const isDesktop = useMediaQuery("(min-width: 768px)");
   const isInitialLoading = loading && tasks.length === 0;
 
   if (isInitialLoading) {
@@ -37,24 +35,13 @@ function Board() {
           </div>
           <div className="flex items-center gap-2">
             <ThemeToggle />
-            {isDesktop ? (
-              <Button
-                onClick={() => setDialogOpen(true)}
-                size="sm"
-                className="gap-1.5"
-              >
-                <Plus className="w-4 h-4" />
-                New Task
-              </Button>
-            ) : (
-              <Button
-                onClick={() => setDialogOpen(true)}
-                size="icon"
-                className="h-10 w-10 rounded-xl"
-              >
-                <Plus className="w-5 h-5" />
-              </Button>
-            )}
+            <Button
+              onClick={() => setDialogOpen(true)}
+              className="h-10 w-10 rounded-xl px-0 sm:w-auto sm:px-4 sm:gap-1.5"
+            >
+              <Plus className="h-5 w-5 sm:h-4 sm:w-4" />
+              <span className="hidden sm:inline">New Task</span>
+            </Button>
           </div>
         </div>
       </header>
