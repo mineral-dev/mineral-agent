@@ -57,10 +57,18 @@ export function TaskColumn({ column, tasks, onUpdate, onDelete }) {
             {tasks.length === 0 && !snapshot.isDraggingOver && (
               <div className="flex flex-col items-center justify-center py-10 text-center">
                 <p className="text-xs text-muted-foreground">
-                  Nothing here yet
+                  {column.id === 'not_started' && 'No Not Started tasks'}
+                  {column.id === 'ready_to_start' && 'No Ready to Start tasks'}
+                  {column.id === 'in_progress' && 'No In Progress tasks'}
+                  {column.id === 'in_review' && 'No In Review tasks'}
+                  {column.id === 'completed' && 'No Completed tasks'}
                 </p>
                 <p className="text-xs text-muted-foreground/60 mt-0.5">
-                  Drag a card here
+                  {column.id === 'not_started' && 'Drag tasks here to queue them'}
+                  {column.id === 'ready_to_start' && 'Tasks ready to be picked up'}
+                  {column.id === 'in_progress' && "Tasks you're actively working on"}
+                  {column.id === 'in_review' && 'Tasks waiting for review'}
+                  {column.id === 'completed' && 'Finished tasks appear here'}
                 </p>
               </div>
             )}

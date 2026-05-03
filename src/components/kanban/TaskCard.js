@@ -214,7 +214,7 @@ function TaskDetailInner({ task, formatTime, projectLabel, showTimeWork }) {
           Description
         </div>
         <p className="mt-2 whitespace-pre-line text-sm leading-6 text-foreground/90">
-          {task.description || "No description added."}
+          {task.description || "No description"}
         </p>
       </div>
 
