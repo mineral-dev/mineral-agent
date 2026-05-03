@@ -36,6 +36,10 @@ export function KanbanBoard() {
       return;
     const task = tasks.find((t) => String(t.id) === String(draggableId));
     if (task) {
+      // Task card movement rules:
+      // - in_progress: cannot be moved anywhere (locked during work)
+      // - not_started: can only move to ready_to_start (staff must deliberate before picking up)
+      // - in_review / completed: can move to any column
       if (task.status === 'in_progress') return;
       if (task.status === 'not_started' && destination.droppableId !== 'ready_to_start') return;
     }
