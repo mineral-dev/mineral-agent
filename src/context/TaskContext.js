@@ -63,8 +63,10 @@ export function TaskProvider({ children }) {
       if (!task) return prev;
       const updated = { ...task, status: newStatus, order: newOrder };
       if (newStatus !== 'completed') {
-        return [...others.filter(t => t.status !== newStatus || t.status === newStatus), updated]
-          .sort((a, b) => a.order - b.order);
+        const inDest = others.filter(t => t.status === newStatus);
+        const elsewhere = others.filter(t => t.status !== newStatus);
+        inDest.splice(newOrder, 0, updated);
+        return [...elsewhere, ...inDest];
       }
       return [...others, updated];
     });
