@@ -31,8 +31,9 @@ const defaultForm = {
 };
 
 const PRIORITIES = [
-  { value: "normal", label: "Normal", dot: "bg-muted-foreground/50" },
   { value: "high", label: "High", dot: "bg-red-500" },
+  { value: "normal", label: "Normal", dot: "bg-muted-foreground/50" },
+  { value: "low", label: "Low", dot: "bg-blue-400" },
 ];
 
 function TaskFormInner({ form, setForm, onSubmit, error }) {
@@ -93,7 +94,9 @@ function TaskFormInner({ form, setForm, onSubmit, error }) {
                     active
                       ? p.value === "high"
                         ? "bg-red-500 text-white border-red-500"
-                        : "bg-foreground text-background"
+                        : p.value === "low"
+                          ? "bg-blue-500 text-white border-blue-500"
+                          : "bg-foreground text-background"
                       : "bg-background text-muted-foreground hover:bg-muted/40"
                   }`}
               >

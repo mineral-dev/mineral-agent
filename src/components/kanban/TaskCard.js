@@ -35,8 +35,9 @@ import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
 
 const PRIORITIES = [
-  { value: "normal", label: "Normal", dot: "bg-muted-foreground/50" },
   { value: "high", label: "High", dot: "bg-red-500" },
+  { value: "normal", label: "Normal", dot: "bg-muted-foreground/50" },
+  { value: "low", label: "Low", dot: "bg-blue-400" },
 ];
 
 const STATUS_LABELS = {
@@ -143,7 +144,9 @@ function EditFormInner({ form, setForm, onSubmit }) {
                     active
                       ? p.value === "high"
                         ? "bg-red-500 text-white border-red-500"
-                        : "bg-foreground text-background"
+                        : p.value === "low"
+                          ? "bg-blue-500 text-white border-blue-500"
+                          : "bg-foreground text-background"
                       : "bg-background text-muted-foreground hover:bg-muted/40"
                   }`}
               >
@@ -195,11 +198,13 @@ function TaskDetailInner({ task, formatTime, projectLabel, showTimeWork }) {
               ${
                 task.priority === "high"
                   ? "border-orange-500/20 bg-orange-500/10 text-orange-600 dark:text-orange-400"
+                  : task.priority === "low"
+                  ? "border-blue-500/20 bg-blue-500/10 text-blue-600 dark:text-blue-400"
                   : "border-border/60 bg-muted/50 text-muted-foreground"
               }`}
           >
             {task.priority === "high" ? <Zap className="h-3 w-3" /> : null}
-            {task.priority === "high" ? "High priority" : "Normal priority"}
+            {task.priority === "high" ? "High priority" : task.priority === "low" ? "Low priority" : "Normal priority"}
           </span>
           <Badge variant="outline" className="rounded-full px-3 py-1">
             {STATUS_LABELS[task.status] || task.status}
@@ -516,6 +521,12 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
                 <div className="inline-flex items-center gap-0.5 rounded-md bg-orange-50 px-1.5 py-0.5 text-[10px] font-semibold text-orange-600 dark:bg-orange-950/40 dark:text-orange-400">
                   <Zap className="h-2.5 w-2.5" />
                   High
+                </div>
+              )}
+              {task.priority === "low" && (
+                <div className="inline-flex items-center gap-0.5 rounded-md bg-blue-50 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:bg-blue-950/40 dark:text-blue-400">
+                  <span className="w-2 h-2 rounded-full bg-blue-500" />
+                  Low
                 </div>
               )}
               {task.prUrl && task.status === "in_review" && (
