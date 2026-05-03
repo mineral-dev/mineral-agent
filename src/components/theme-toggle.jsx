@@ -13,6 +13,12 @@ function applyTheme(theme) {
   root.style.colorScheme = theme;
 }
 
+function setThemeCookie(theme) {
+  // Set cookie with 1 year expiry, path=/, sameSite=lax
+  const expires = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toUTCString();
+  document.cookie = `mineral-theme=${theme}; expires=${expires}; path=/; SameSite=Lax`;
+}
+
 function getPreferredTheme() {
   return window.matchMedia("(prefers-color-scheme: dark)").matches
     ? "dark"
@@ -44,7 +50,9 @@ export function ThemeToggle({ className }) {
     } catch (error) {}
     applyTheme(theme);
 
+    // Set cookie if we have a stored theme
     if (storedTheme === "light" || storedTheme === "dark") {
+      setThemeCookie(storedTheme);
       return;
     }
 
@@ -72,6 +80,7 @@ export function ThemeToggle({ className }) {
     setTheme(nextTheme);
     try {
       window.localStorage.setItem(STORAGE_KEY, nextTheme);
+      setThemeCookie(nextTheme);
     } catch (error) {}
     applyTheme(nextTheme);
   };
