@@ -3,7 +3,7 @@
  * pickup_task.mjs
  * Mineral Agent — find one "ready_to_start" task, estimate work time,
  * write total_work (minutes), move to "in_progress", log result.
- * Branch naming convention for coding agents: hermes/coder-work-{2-word-slug-from-title}.
+ * Branch naming convention for coding agents: hermes/coder-work-{slugified-title}-{4-char-random-id}.
  *
  * Usage: node pickup_task.mjs
  * Requires: DATABASE_URL env var (Neon PostgreSQL connection string)
@@ -70,29 +70,13 @@ function estimateWorkMinutes(title = '', description = '') {
 // ─── Format ───────────────────────────────────────────────────────────────────
 
 function formatBranchName(title = '') {
+  const randomId = Math.random().toString(16).slice(2, 6).padStart(4, '0');
   const stopwords = new Set([
-    'a',
-    'the',
-    'to',
-    'of',
-    'for',
-    'in',
-    'on',
-    'and',
-    'or',
-    'is',
-    'are',
-    'be',
-    'add',
-    'new',
-    'create',
-    'change',
-    'show',
-    'update',
-    'name',
-    'creation',
+    'a', 'the', 'to', 'of', 'for', 'in', 'on', 'and', 'or', 'is', 'are', 'be',
+    'add', 'new', 'create', 'change', 'show', 'update', 'name', 'creation',
   ]);
   const preferredTerms = new Set(['branch']);
+
   const words = title
     .toLowerCase()
     .match(/[a-z0-9]+/g) ?? [];
@@ -105,14 +89,19 @@ function formatBranchName(title = '') {
     meaningfulWords.push(word);
   }
 
-  const slug = meaningfulWords
+  // Sort preferred terms first, then by original order; take first 2
+  const ordered = meaningfulWords
     .map((word, index) => ({ word, index, score: preferredTerms.has(word) ? 1 : 0 }))
     .sort((a, b) => b.score - a.score || a.index - b.index)
     .slice(0, 2)
-    .map(({ word }) => word)
-    .join('-');
+    .map(({ word }) => word);
 
-  return `hermes/coder-work-${slug}`;
+  // Build slug from meaningful words, truncate to 26 chars to keep total ≤ 50
+  let slug = ordered.join('-');
+  const maxTitleLen = 26;
+  if (slug.length > maxTitleLen) slug = slug.slice(0, maxTitleLen);
+
+  return `hermes/coder-work-${slug}-${randomId}`;
 }
 
 function formatDuration(minutes) {
