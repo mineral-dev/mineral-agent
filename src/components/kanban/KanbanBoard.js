@@ -23,6 +23,11 @@ export function KanbanBoard() {
       source.index === destination.index
     )
       return;
+    const task = tasks.find((t) => String(t.id) === String(draggableId));
+    if (task) {
+      if (task.status === 'in_progress') return;
+      if (task.status === 'not_started' && destination.droppableId !== 'ready_to_start') return;
+    }
     await moveTask(draggableId, destination.droppableId, destination.index);
   };
 
