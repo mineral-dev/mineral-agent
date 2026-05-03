@@ -143,6 +143,8 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
     ? task.project.split('/')[1]
     : task.project;
 
+  const hasMetadata = task.project || showTimeWork || (task.prUrl && task.status === 'in_review');
+
   const formContent = <EditFormInner form={form} setForm={setForm} onSubmit={save} />;
   const formButtons = (
     <>
@@ -180,19 +182,85 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
       )}
 
       <Card
-        className={`mb-2 group relative cursor-grab active:cursor-grabbing overflow-hidden transition-all
-          ${task.priority === 'high' ? 'border-l-[3px] border-l-red-400' : ''}
+        className={`mb-2 group relative cursor-grab active:cursor-grabbing overflow-hidden transition-all duration-200 rounded-xl
           ${isDragging
-            ? 'rotate-1 opacity-90 shadow-lg border-primary/40'
-            : 'border-border hover:border-primary/30 hover:shadow-sm'
+            ? 'rotate-1 opacity-90 shadow-xl border-primary/30 scale-[1.02]'
+            : 'shadow-sm hover:shadow-md border-border/60 hover:border-border'
           }`}
       >
+        {/* High priority top accent strip */}
+        {task.priority === 'high' && (
+          <div className="h-[3px] w-full bg-gradient-to-r from-red-400 via-orange-400 to-red-400" />
+        )}
+
+        <div className="p-3.5 space-y-2">
+          {/* Title row with priority dot */}
+          <div className="flex items-start gap-2.5 pr-7">
+            <div
+              className={`mt-[5px] w-2 h-2 rounded-full shrink-0 ring-[1.5px] ring-offset-[1.5px] ring-offset-card transition-colors
+                ${task.priority === 'high'
+                  ? 'bg-red-400 ring-red-300'
+                  : 'bg-muted-foreground/20 ring-transparent'
+                }`}
+            />
+            <p className="font-semibold text-[13px] leading-snug line-clamp-2 flex-1 text-foreground">
+              {task.title}
+            </p>
+          </div>
+
+          {/* Description */}
+          {task.description && (
+            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2 pl-[18px]">
+              {task.description}
+            </p>
+          )}
+
+          {/* Metadata chips */}
+          {hasMetadata && (
+            <div className="flex gap-1.5 flex-wrap items-center pl-[18px] pt-0.5">
+              {task.project && (
+                <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-muted/70 text-muted-foreground font-medium border border-border/50">
+                  <Folder className="w-2.5 h-2.5 shrink-0" />
+                  {projectLabel}
+                </span>
+              )}
+              {showTimeWork && (
+                <span className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-600 font-medium border border-blue-100 dark:bg-blue-950/40 dark:text-blue-400 dark:border-blue-900/40">
+                  <Clock className="w-2.5 h-2.5 shrink-0" />
+                  {formatTime(task.totalWork)}
+                </span>
+              )}
+              {task.prUrl && task.status === 'in_review' && (
+                <a
+                  href={task.prUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 text-[11px] px-2 py-0.5 rounded-full bg-violet-50 text-violet-600 font-medium border border-violet-100 dark:bg-violet-950/40 dark:text-violet-400 dark:border-violet-900/40 hover:underline"
+                >
+                  <GitPullRequest className="w-2.5 h-2.5 shrink-0" />
+                  PR
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* High priority badge — bottom-right */}
+        {task.priority === 'high' && (
+          <div className="absolute bottom-2.5 right-2.5 inline-flex items-center gap-0.5 text-[10px] px-1.5 py-0.5 rounded-md bg-red-50 text-red-500 font-semibold dark:bg-red-950/40 dark:text-red-400">
+            <Zap className="w-2.5 h-2.5" />
+            High
+          </div>
+        )}
+
+        {/* Actions — appear on hover */}
         <DropdownMenu>
           <DropdownMenuTrigger
-            className="absolute top-2 right-2 h-8 w-8 rounded-lg inline-flex items-center justify-center text-muted-foreground/50 hover:text-muted-foreground hover:bg-accent z-10 focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+            className="absolute top-2.5 right-2.5 h-7 w-7 rounded-lg inline-flex items-center justify-center text-transparent group-hover:text-muted-foreground/60 hover:!text-muted-foreground hover:bg-accent z-10 focus-visible:ring-2 focus-visible:ring-primary transition-colors"
             onMouseDown={(e) => e.stopPropagation()}
           >
-            <MoreHorizontal className="w-4 h-4" />
+            <MoreHorizontal className="w-3.5 h-3.5" />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-40">
             <DropdownMenuItem onClick={openEdit} className="gap-2">
@@ -210,49 +278,6 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
-
-        <div className="p-3 space-y-2">
-          <p className="font-medium text-sm leading-snug line-clamp-3 pr-8">{task.title}</p>
-          {task.description && (
-            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
-              {task.description}
-            </p>
-          )}
-          {(task.priority === 'high' || task.project || showTimeWork) && (
-            <div className="flex gap-1.5 flex-wrap items-center pt-0.5">
-              {task.priority === 'high' && (
-                <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-medium dark:bg-red-950/40 dark:text-red-400">
-                  <Zap className="w-3 h-3" />
-                  High
-                </span>
-              )}
-              {task.project && (
-                <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md bg-muted/80 text-muted-foreground">
-                  <Folder className="w-3 h-3 shrink-0" />
-                  {projectLabel}
-                </span>
-              )}
-              {showTimeWork && (
-                <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 font-medium dark:bg-blue-950/40 dark:text-blue-400">
-                  <Clock className="w-3 h-3 shrink-0" />
-                  {formatTime(task.totalWork)}
-                </span>
-              )}
-              {task.prUrl && task.status === 'in_review' && (
-                <a
-                  href={task.prUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  onClick={(e) => e.stopPropagation()}
-                  className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-600 font-medium dark:bg-purple-950/40 dark:text-purple-400 hover:underline"
-                >
-                  <GitPullRequest className="w-3 h-3 shrink-0" />
-                  PR
-                </a>
-              )}
-            </div>
-          )}
-        </div>
       </Card>
     </>
   );

@@ -126,6 +126,23 @@ function TaskFormInner({ form, setForm, onSubmit, error }) {
   );
 }
 
+function AgentSparkLoader() {
+  return (
+    <span className="inline-flex items-center gap-[3px]">
+      {[0, 1, 2, 3].map((i) => (
+        <span
+          key={i}
+          className="block w-[5px] h-[5px] bg-current"
+          style={{
+            clipPath: 'polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)',
+            animation: `agent-spark 1s ease-in-out ${i * 0.14}s infinite`,
+          }}
+        />
+      ))}
+    </span>
+  );
+}
+
 function FormButtons({ onCancel, onSubmit, isSubmitting, titleEmpty }) {
   return (
     <>
@@ -140,9 +157,16 @@ function FormButtons({ onCancel, onSubmit, isSubmitting, titleEmpty }) {
       <Button
         onClick={onSubmit}
         disabled={titleEmpty || isSubmitting}
-        className="flex-1 h-11"
+        className="flex-1 h-11 gap-2"
       >
-        {isSubmitting ? "Creating..." : "Create Task"}
+        {isSubmitting ? (
+          <>
+            <AgentSparkLoader />
+            Creating
+          </>
+        ) : (
+          "Create Task"
+        )}
       </Button>
     </>
   );
