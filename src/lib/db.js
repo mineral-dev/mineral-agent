@@ -49,6 +49,18 @@ async function initSchema() {
   await query(`
     ALTER TABLE tasks ADD COLUMN IF NOT EXISTS completed_at TIMESTAMPTZ
   `);
+  await query(`
+    CREATE TABLE IF NOT EXISTS settings (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    )
+  `);
+  // Initialize default password if not exists
+  await query(`
+    INSERT INTO settings (key, value)
+    VALUES ('password', 'admin1')
+    ON CONFLICT (key) DO NOTHING
+  `);
 }
 
 // Ensure schema exists
@@ -223,4 +235,18 @@ export async function getByStatus(status) {
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   }));
+}
+
+export async function getSetting(key) {
+  await ensureSchema();
+  const result = await query('SELECT value FROM settings WHERE key = $1', [key]);
+  return result.rows.length > 0 ? result.rows[0].value : null;
+}
+
+export async function setSetting(key, value) {
+  await ensureSchema();
+  await query(
+    'INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = $2',
+    [key, value]
+  );
 }
