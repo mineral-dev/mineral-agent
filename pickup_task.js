@@ -12,7 +12,12 @@ client.connect()
     FROM tasks
     WHERE status = 'ready_to_start'
     ORDER BY
-      CASE WHEN priority = 'high' THEN 0 ELSE 1 END,
+      CASE priority
+        WHEN 'high'   THEN 0
+        WHEN 'normal' THEN 1
+        WHEN 'low'    THEN 2
+        ELSE 3
+      END,
       COALESCE(total_work, 999999) ASC,
       created_at ASC
     LIMIT 1
