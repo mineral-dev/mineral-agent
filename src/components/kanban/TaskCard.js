@@ -43,7 +43,6 @@ const STATUS_LABELS = {
   ready_to_start: "Ready to start",
   in_progress: "In progress",
   in_review: "In review",
-  approved: "Approved",
   completed: "Completed",
 };
 
@@ -52,7 +51,6 @@ const STATUS_PIN_STYLES = {
   ready_to_start: "text-blue-500",
   in_progress: "text-amber-500",
   in_review: "text-amber-500",
-  approved: "text-emerald-500",
   completed: "text-emerald-700",
 };
 
