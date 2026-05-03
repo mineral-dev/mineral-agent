@@ -1,8 +1,22 @@
 'use client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetFooter,
+} from '@/components/ui/sheet';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,40 +24,80 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import {
-  Clock,
-  Folder,
-  MoreHorizontal,
-  Pencil,
-  Timer,
-  Trash2,
-  Zap,
-} from 'lucide-react';
-import { useState } from 'react';
-
-function formatEta(startedAt, totalWork) {
-  const eta = new Date(startedAt).getTime() + totalWork * 60 * 1000;
-  const now = Date.now();
-  const diffMs = eta - now;
-  const diffMin = Math.round(diffMs / 60000);
-
-  if (diffMin > 0) {
-    if (diffMin < 60) return { label: `in ${diffMin}m`, overdue: false };
-    const h = Math.floor(diffMin / 60);
-    const m = diffMin % 60;
-    return { label: `in ${h}h${m > 0 ? ` ${m}m` : ''}`, overdue: false };
-  }
-  const over = Math.abs(diffMin);
-  if (over < 60) return { label: `${over}m overdue`, overdue: true };
-  const h = Math.floor(over / 60);
-  const m = over % 60;
-  return { label: `${h}h${m > 0 ? ` ${m}m` : ''} overdue`, overdue: true };
-}
+import { Clock, Folder, GitPullRequest, MoreHorizontal, Pencil, Trash2, Zap } from 'lucide-react';
+import { useState, useCallback } from 'react';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 const PRIORITIES = [
   { value: 'normal', label: 'Normal', dot: 'bg-muted-foreground/50' },
   { value: 'high', label: 'High', dot: 'bg-red-500' },
 ];
+
+function EditFormInner({ form, setForm, onSubmit }) {
+  return (
+    <div className="space-y-3">
+      <div>
+        <label className="text-sm font-medium text-foreground mb-1.5 block">Title *</label>
+        <Input
+          placeholder="What needs to be done?"
+          value={form.title}
+          onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+          onKeyDown={(e) => e.key === 'Enter' && form.title.trim() && onSubmit()}
+          autoFocus
+          className="h-11"
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium text-foreground mb-1.5 block">Description</label>
+        <Textarea
+          placeholder="Notes, links, or context..."
+          value={form.description}
+          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
+          rows={3}
+          className="resize-none"
+        />
+      </div>
+      <div>
+        <label className="text-sm font-medium text-foreground mb-1.5 block">Priority</label>
+        <div className="flex rounded-xl border border-border overflow-hidden">
+          {PRIORITIES.map((p) => {
+            const active = form.priority === p.value;
+            return (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => setForm((f) => ({ ...f, priority: p.value }))}
+                className={`flex-1 flex items-center justify-center gap-2 h-11 text-sm font-medium transition-colors border-r last:border-r-0 border-border
+                  ${active
+                    ? p.value === 'high'
+                      ? 'bg-red-500 text-white border-red-500'
+                      : 'bg-foreground text-background'
+                    : 'bg-background text-muted-foreground hover:bg-muted/40'
+                  }`}
+              >
+                {p.value === 'high' ? (
+                  <Zap className={`w-3.5 h-3.5 ${active ? 'text-white' : 'text-red-500'}`} />
+                ) : (
+                  <span className={`w-2 h-2 rounded-full ${active ? 'bg-background/60' : p.dot}`} />
+                )}
+                {p.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+      <div>
+        <label className="text-sm font-medium text-foreground mb-1.5 block">Project</label>
+        <Input
+          placeholder="mineral-dev/repo-name (optional)"
+          value={form.project}
+          onChange={(e) => setForm((f) => ({ ...f, project: e.target.value }))}
+          className="h-11"
+        />
+      </div>
+    </div>
+  );
+}
 
 export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
   const [editing, setEditing] = useState(false);
@@ -53,173 +107,153 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
     priority: task.priority || 'normal',
     project: task.project || '',
   });
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
-  const handlePriorityChange = (value) => {
-    setForm((f) => ({ ...f, priority: value }));
-  };
-
-  const save = () => {
-    onUpdate(task.id, {
-      title: form.title,
-      description: form.description,
-      priority: form.priority,
-      project: form.project,
-    });
-    setEditing(false);
-  };
-
-  const cancel = () => {
-    setEditing(false);
+  const openEdit = useCallback(() => {
     setForm({
       title: task.title,
       description: task.description || '',
       priority: task.priority || 'normal',
       project: task.project || '',
     });
-  };
+    setEditing(true);
+  }, [task]);
 
-  if (editing) {
-    return (
-      <Card className="mb-2 p-3 space-y-1.5 border-primary/40 ring-1 ring-primary/10">
-        <Textarea
-          value={form.title}
-          onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-          onInput={(e) => { e.target.style.height = 'auto'; e.target.style.height = e.target.scrollHeight + 'px'; }}
-          className="resize-none overflow-hidden min-h-0 text-sm font-medium border-none shadow-none bg-transparent focus-visible:ring-0 px-0 py-0 leading-snug"
-          rows={1}
-          autoFocus
-          onKeyDown={(e) => {
-            if (e.key === 'Enter') { e.preventDefault(); form.title.trim() && save(); }
-            if (e.key === 'Escape') cancel();
-          }}
-        />
-        <Textarea
-          value={form.description}
-          onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-          onKeyDown={(e) => e.key === 'Escape' && cancel()}
-          placeholder="Notes..."
-          rows={1}
-          className="resize-none min-h-0 text-xs text-muted-foreground border-none shadow-none bg-transparent focus-visible:ring-0 px-0 py-0 leading-snug"
-        />
-        <Input
-          value={form.project}
-          onChange={(e) => setForm((f) => ({ ...f, project: e.target.value }))}
-          onKeyDown={(e) => e.key === 'Escape' && cancel()}
-          placeholder="mineral-dev/repo-name"
-          className="h-7 text-xs border border-border rounded-full bg-background text-muted-foreground placeholder:text-muted-foreground/60 px-2.5 py-1 focus-visible:ring-1 focus-visible:ring-primary/50"
-        />
-        <div className="flex rounded-lg border border-border overflow-hidden">
-          {PRIORITIES.map((p) => {
-            const active = form.priority === p.value;
-            return (
-              <button
-                key={p.value}
-                type="button"
-                onClick={() => handlePriorityChange(p.value)}
-                className={`flex-1 flex items-center justify-center gap-1 h-7 text-xs font-medium transition-colors border-r last:border-r-0 border-border
-                  ${active
-                    ? p.value === 'high'
-                      ? 'bg-red-500 text-white border-red-500'
-                      : 'bg-foreground text-background'
-                    : 'bg-background text-muted-foreground hover:bg-muted/40'
-                  }`}
-              >
-                {p.value === 'high' ? (
-                  <Zap className={`w-2.5 h-2.5 ${active ? 'text-white' : 'text-red-500'}`} />
-                ) : (
-                  <span className={`w-1.5 h-1.5 rounded-full ${active ? 'bg-background/60' : p.dot}`} />
-                )}
-                {p.label}
-              </button>
-            );
-          })}
-        </div>
-        <div className="flex gap-1.5">
-          <Button size="sm" onClick={save} disabled={!form.title.trim()} className="flex-1 h-7 text-xs">
-            Save
-          </Button>
-          <Button size="sm" variant="outline" onClick={cancel} className="flex-1 h-7 text-xs">
-            Cancel
-          </Button>
-        </div>
-      </Card>
-    );
-  }
+  const save = useCallback(() => {
+    if (!form.title.trim()) return;
+    onUpdate(task.id, {
+      title: form.title.trim(),
+      description: form.description,
+      priority: form.priority,
+      project: form.project,
+    });
+    setEditing(false);
+  }, [form, onUpdate, task.id]);
+
+  const cancel = useCallback(() => setEditing(false), []);
+
+  const showTimeWork =
+    task.totalWork && ['in_progress', 'in_review', 'completed'].includes(task.status);
+  const formatTime = (m) =>
+    m >= 60
+      ? `${Math.floor(m / 60)}h${m % 60 > 0 ? ` ${m % 60}m` : ''}`
+      : `${m}m`;
+
+  const projectLabel = task.project?.includes('/')
+    ? task.project.split('/')[1]
+    : task.project;
+
+  const formContent = <EditFormInner form={form} setForm={setForm} onSubmit={save} />;
+  const formButtons = (
+    <>
+      <Button variant="outline" onClick={cancel} className="flex-1 h-11">
+        Cancel
+      </Button>
+      <Button onClick={save} disabled={!form.title.trim()} className="flex-1 h-11">
+        Save Changes
+      </Button>
+    </>
+  );
 
   return (
-    <Card
-      className={`mb-2 group relative cursor-grab active:cursor-grabbing border-border
-        ${isDragging
-          ? 'rotate-1 opacity-90 border-primary/40'
-          : 'hover:border-primary/30'
-        }`}
-    >
-      <DropdownMenu>
-        <DropdownMenuTrigger
-          className="absolute top-2 right-2 h-11 w-11 rounded-xl inline-flex items-center justify-center text-muted-foreground hover:bg-accent hover:text-accent-foreground z-10 focus-visible:ring-2 focus-visible:ring-primary"
-          onMouseDown={(e) => e.stopPropagation()}
-        >
-          <MoreHorizontal className="w-4 h-4" />
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-40">
-          <DropdownMenuItem onClick={() => setEditing(true)} className="gap-2">
-            <Pencil className="w-3.5 h-3.5" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            variant="destructive"
-            onClick={() => onDelete(task.id)}
-            className="gap-2"
+    <>
+      {isDesktop ? (
+        <Dialog open={editing} onOpenChange={(open) => !open && cancel()}>
+          <DialogContent className="sm:max-w-xl p-6 gap-4">
+            <DialogHeader>
+              <DialogTitle className="text-lg">Edit Task</DialogTitle>
+            </DialogHeader>
+            {formContent}
+            <DialogFooter className="flex-row gap-3">{formButtons}</DialogFooter>
+          </DialogContent>
+        </Dialog>
+      ) : (
+        <Sheet open={editing} onOpenChange={(open) => !open && cancel()}>
+          <SheetContent side="bottom" className="pb-6 pt-4 rounded-t-2xl">
+            <SheetHeader className="pb-4">
+              <SheetTitle className="text-lg">Edit Task</SheetTitle>
+            </SheetHeader>
+            <div className="px-4">{formContent}</div>
+            <SheetFooter className="flex-row gap-3 pt-4">{formButtons}</SheetFooter>
+          </SheetContent>
+        </Sheet>
+      )}
+
+      <Card
+        className={`mb-2 group relative cursor-grab active:cursor-grabbing overflow-hidden transition-all
+          ${task.priority === 'high' ? 'border-l-[3px] border-l-red-400' : ''}
+          ${isDragging
+            ? 'rotate-1 opacity-90 shadow-lg border-primary/40'
+            : 'border-border hover:border-primary/30 hover:shadow-sm'
+          }`}
+      >
+        <DropdownMenu>
+          <DropdownMenuTrigger
+            className="absolute top-2 right-2 h-8 w-8 rounded-lg inline-flex items-center justify-center text-muted-foreground/50 hover:text-muted-foreground hover:bg-accent z-10 focus-visible:ring-2 focus-visible:ring-primary transition-colors"
+            onMouseDown={(e) => e.stopPropagation()}
           >
-            <Trash2 className="w-3.5 h-3.5" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-      <div className="p-3 space-y-2">
-        <p className="font-medium text-sm leading-tight line-clamp-2 pr-6">{task.title}</p>
-        {task.description && (
-          <p className="text-xs text-muted-foreground line-clamp-2">{task.description}</p>
-        )}
-        {(task.priority === 'high' || task.project || task.totalWork) && (
-          <div className="flex gap-1.5 flex-wrap pt-1">
-            {task.priority === 'high' && (
-              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-700 border border-red-200 font-medium">
-                <span className="w-1 h-1 rounded-full bg-red-500" />
-                High Priority
-              </span>
-            )}
-            {task.project && (
-              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-muted text-muted-foreground border border-border">
-                <Folder className="w-3 h-3 shrink-0" />
-                {task.project}
-              </span>
-            )}
-            {task.totalWork && (
-              <span className="inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 border border-blue-200 font-medium">
-                <Clock className="w-3 h-3 shrink-0" />
-                {task.totalWork >= 60
-                  ? `${Math.floor(task.totalWork / 60)}h ${task.totalWork % 60 > 0 ? `${task.totalWork % 60}m` : ''}`.trim()
-                  : `${task.totalWork}m`}
-              </span>
-            )}
-            {task.startedAt && task.totalWork && task.status === 'in_progress' && (() => {
-              const eta = formatEta(task.startedAt, task.totalWork);
-              return (
-                <span className={`inline-flex items-center gap-1 text-xs px-2 py-0.5 rounded-full font-medium border ${
-                  eta.overdue
-                    ? 'bg-orange-50 text-orange-700 border-orange-200'
-                    : 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                }`}>
-                  <Timer className="w-3 h-3 shrink-0" />
-                  {eta.label}
+            <MoreHorizontal className="w-4 h-4" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-40">
+            <DropdownMenuItem onClick={openEdit} className="gap-2">
+              <Pencil className="w-3.5 h-3.5" />
+              Edit
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              variant="destructive"
+              onClick={() => onDelete(task.id)}
+              className="gap-2"
+            >
+              <Trash2 className="w-3.5 h-3.5" />
+              Delete
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+
+        <div className="p-3 space-y-2">
+          <p className="font-medium text-sm leading-snug line-clamp-3 pr-8">{task.title}</p>
+          {task.description && (
+            <p className="text-xs text-muted-foreground leading-relaxed line-clamp-2">
+              {task.description}
+            </p>
+          )}
+          {(task.priority === 'high' || task.project || showTimeWork) && (
+            <div className="flex gap-1.5 flex-wrap items-center pt-0.5">
+              {task.priority === 'high' && (
+                <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md bg-red-50 text-red-600 font-medium dark:bg-red-950/40 dark:text-red-400">
+                  <Zap className="w-3 h-3" />
+                  High
                 </span>
-              );
-            })()}
-          </div>
-        )}
-      </div>
-    </Card>
+              )}
+              {task.project && (
+                <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md bg-muted/80 text-muted-foreground">
+                  <Folder className="w-3 h-3 shrink-0" />
+                  {projectLabel}
+                </span>
+              )}
+              {showTimeWork && (
+                <span className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md bg-blue-50 text-blue-600 font-medium dark:bg-blue-950/40 dark:text-blue-400">
+                  <Clock className="w-3 h-3 shrink-0" />
+                  {formatTime(task.totalWork)}
+                </span>
+              )}
+              {task.prUrl && task.status === 'in_review' && (
+                <a
+                  href={task.prUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  onClick={(e) => e.stopPropagation()}
+                  className="inline-flex items-center gap-1 text-xs px-1.5 py-0.5 rounded-md bg-purple-50 text-purple-600 font-medium dark:bg-purple-950/40 dark:text-purple-400 hover:underline"
+                >
+                  <GitPullRequest className="w-3 h-3 shrink-0" />
+                  PR
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
+    </>
   );
 }
