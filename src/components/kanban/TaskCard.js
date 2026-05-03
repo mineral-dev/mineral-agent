@@ -49,9 +49,9 @@ const STATUS_LABELS = {
 const STATUS_PIN_STYLES = {
   not_started: "text-slate-400",
   ready_to_start: "text-blue-500",
-  in_progress: "text-amber-500",
-  in_review: "text-amber-500",
-  completed: "text-emerald-700",
+  in_progress: "text-yellow-500",
+  in_review: "text-purple-500",
+  completed: "text-green-500",
 };
 
 function formatDateTime(value) {
