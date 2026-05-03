@@ -7,9 +7,20 @@ export function KanbanBoard() {
   const { tasks, COLUMNS, updateTask, deleteTask, moveTask } = useTasks();
 
   const byColumn = (colId) => {
-    const filtered = tasks
+    let filtered = tasks
       .filter((t) => t.status === colId)
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+
+    // Hide low-priority tasks in not_started when high/normal tasks still exist
+    if (colId === 'not_started') {
+      const hasHighOrNormal = filtered.some(
+        (t) => t.priority === 'high' || t.priority === 'normal'
+      );
+      if (hasHighOrNormal) {
+        filtered = filtered.filter((t) => t.priority !== 'low');
+      }
+    }
+
     // Cap completed column at 25 tasks, sorted newest first
     if (colId === 'completed') return filtered.slice(-25).sort((a, b) => b.id - a.id);
     return filtered;
