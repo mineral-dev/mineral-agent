@@ -1,6 +1,6 @@
 "use client";
 import { DragDropContext } from "@hello-pangea/dnd";
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useTasks } from "@/context/TaskContext";
 import { TaskColumn } from "./TaskColumn";
 import {
@@ -40,6 +40,11 @@ export function KanbanBoard() {
   const [selectedReason, setSelectedReason] = useState(null);
   const [note, setNote] = useState("");
   const [draggedTaskStatus, setDraggedTaskStatus] = useState(null);
+  const [visibleCounts, setVisibleCounts] = useState({});
+
+  const handleLoadMore = useCallback((colId) => {
+    setVisibleCounts(prev => ({ ...prev, [colId]: (prev[colId] ?? 20) + 20 }));
+  }, []);
 
   const byColumn = (colId) => {
     let filtered = tasks
@@ -56,8 +61,7 @@ export function KanbanBoard() {
       }
     }
 
-    // Cap completed column at 25 tasks, sorted newest first
-    if (colId === "completed") return filtered.slice(-25).sort((a, b) => b.id - a.id);
+    if (colId === "completed") return filtered.sort((a, b) => b.id - a.id);
     return filtered;
   };
 
@@ -122,6 +126,8 @@ export function KanbanBoard() {
               key={col.id}
               column={col}
               tasks={byColumn(col.id)}
+              visibleCount={visibleCounts[col.id] ?? 20}
+              onLoadMore={handleLoadMore}
               onUpdate={updateTask}
               onDelete={deleteTask}
               draggedTaskStatus={draggedTaskStatus}
