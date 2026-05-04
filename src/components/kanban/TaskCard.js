@@ -2,7 +2,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { CircleDot, FolderKanban, GitPullRequest, Pencil, Trash2, Zap, Clock3 } from "lucide-react";
+import { Check, CircleDot, FolderKanban, GitPullRequest, Pencil, Trash2, X, Zap, Clock3 } from "lucide-react";
 import { useMediaQuery } from "@/hooks/useMediaQuery";
 import {
   ResponsiveModal,
@@ -274,7 +274,13 @@ export function TaskCard({ task, onUpdate, onDelete, isDragging }) {
                         : "inline-flex items-center gap-1 rounded-full border border-violet-100 bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-600 hover:underline dark:border-violet-900/40 dark:bg-violet-950/40 dark:text-violet-400"
                   }
                 >
-                  <GitPullRequest className="h-2.5 w-2.5 shrink-0" />
+                  {prMergeStatus === "clean" ? (
+                    <Check className="h-2.5 w-2.5 shrink-0" />
+                  ) : prMergeStatus === "dirty" || prMergeStatus === "unknown" ? (
+                    <X className="h-2.5 w-2.5 shrink-0" />
+                  ) : (
+                    <GitPullRequest className="h-2.5 w-2.5 shrink-0" />
+                  )}
                   PR
                 </a>
               )}
