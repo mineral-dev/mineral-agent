@@ -211,3 +211,5 @@ The app is intended to run on Vercel or another Next.js-compatible host. Provide
 `DATABASE_URL` in the deployment environment so the API routes can connect to
 PostgreSQL. Once deployed, pushes to `main` can trigger the normal CI/CD flow
 for the hosted board.
+
+<!-- Task #13 test marker -->
