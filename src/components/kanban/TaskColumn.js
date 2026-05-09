@@ -1,10 +1,26 @@
 "use client";
+import { useRef, useEffect } from "react";
 import { Droppable, Draggable } from "@hello-pangea/dnd";
 import { ArrowDownToLine } from "lucide-react";
 import { TaskCard } from "./TaskCard";
 import { TASK_STATUS_HELP } from "@/lib/tasks";
 
-export function TaskColumn({ column, tasks, onUpdate, onDelete, draggedTaskStatus }) {
+export function TaskColumn({ column, tasks, visibleCount = 20, onLoadMore, onUpdate, onDelete, draggedTaskStatus }) {
+  const sentinelRef = useRef(null);
+  const visibleTasks = tasks.slice(0, visibleCount);
+  const hasMore = tasks.length > visibleCount;
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) onLoadMore?.(column.id); },
+      { threshold: 0 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, column.id, onLoadMore]);
+
   const isNotStartedDrag = draggedTaskStatus === "not_started";
   const isOnlyValidTarget = !isNotStartedDrag || column.id === "ready_to_start";
 
@@ -38,7 +54,7 @@ export function TaskColumn({ column, tasks, onUpdate, onDelete, draggedTaskStatu
                 : "bg-muted/5"
             } ${isNotStartedDrag && !isOnlyValidTarget ? "cursor-not-allowed" : ""}`}
           >
-            {tasks.map((task, index) => (
+            {visibleTasks.map((task, index) => (
               <Draggable
                 key={task.id}
                 draggableId={String(task.id)}
@@ -61,6 +77,7 @@ export function TaskColumn({ column, tasks, onUpdate, onDelete, draggedTaskStatu
               </Draggable>
             ))}
             {provided.placeholder}
+            {hasMore && <div ref={sentinelRef} className="h-2" />}
             {tasks.length === 0 &&
               !(snapshot.isDraggingOver && column.id === "ready_to_start") && (
                 column.id === "ready_to_start" ? (
